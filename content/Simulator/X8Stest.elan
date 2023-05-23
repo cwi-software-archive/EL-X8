@@ -1,0 +1,1357 @@
+"""""""""""""""""" testprogramma voor de x8-simulator x8s """"""""""""""""""
+"									   "
+" dit testprogramma kan zowel op de x8 gebruikt worden (sva omlaag, ls, ip)"
+" als op de x8-simulator (met het masterprogramma:			   "
+"   (sva on/ lsip/ sva off/ put 0 in m512/ bva)   ).			   "
+" het voert 375 tests uit op vrijwel het gehele opdracht-repertoire	   "
+" van de x8, inclusief het ingreepmechanisme. het bevat echter geen	   "
+" opdrachten waarvan de werking ongedefinieerd is.			   "
+" als verslaglegging worden bij elke test 12 octaden geponst, welke de	   "
+" inhoud van a, s en t beschrijven. dit ponsen geschiedt in de simulator   "
+" door een pseudo-instructie, op de x8 door een ingebouwde ponsroutine.    "
+" het programma eindigt in een dynamische stop.			   "
+"									   "
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+'begin' ip = 5,	" ip-lezer
+	punch = 18,	" bandponser
+	na dev = 36,	" een niet-aanwezig apparaat met if en lvif
+	test dev1 = 3,	" bestaand apparaat tussen 0 en 17
+	test dev2 = 19, " bestaand apparaat tussen 18 en 31
+	test dev3 = 38, " bestaand apparaat tussen 32 en 39
+	mem length = '200 000',
+	pustat, term, stack, rest, sgnbit, lp0, lp1, fp0, fp2,
+	in sim, entry, gotol1, crash, crash1, sub15pustat,
+	read t, mcs, d25, d13t0, d14t0, d18, eom1, ov bit,
+	eom, zero, protw, wa protw, amt255, smt, one,
+	l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l12, l13, l14, l15, l16,
+	clist = m[(512 + '2765') / 2], ch = m[24], wp = m[25],
+	wa = m[26], pr = m[27], gate list = m[256], punch gate, dummy gate,
+	open gate, punch gate addr, dummy gate addr,
+	subc test, subc dummy, subc dummy addr, dummy, dummy addr, bad addr,
+	subc gate, subc gate addr, do ff, ifon0, ifoff0, lvifon0, lvifoff0,
+	dyst nbt, subl14, subl15, subl16, dyst s, dp on, set prot,
+   'mt' mtl1
+
+ch[0]:
+  goto(:entry)		" van iplezer
+  sub(:crash1)		" tegen onverwachte pariteitsingrepen
+  sub(:crash1)		" tegen onverwachte adresingrepen
+  sub(:crash1)		" tegen onverwachte protectieingrepen
+  sub(:crash1)		" tegen onverwachte sleutelingrepen
+
+
+
+
+"""""""""""""""""""""""""""" protectiepoorten """"""""""""""""""""""""""""""
+
+gate list[4]:
+punch gate:		" protectiepoort
+  a = '25 252'		" indicatie
+  sub15(:pustat)	" in bestuurstoestand
+  gotor(mc[-1])	" exit, restore
+
+dummy gate:
+  gotor(mc[-1])	" dummy
+
+open gate:		" protectiepoort
+  a = '52 525'		" indicatie
+  sub15(:pustat)
+  goto(mc[-1])		" exit, bt blijft 1
+
+gate list[60]:
+bad addr:
+  +0
+dummy gate addr:
+  :dummy gate
+punch gate addr:
+  :punch gate
+
+
+
+
+""""""""""""""""""""""""""""" hulproutines """""""""""""""""""""""""""""""""
+
+m[512]:
+
+in sim:
+  +1			" moet voor de simulator vervangen worden door een 0
+
+
+pustat:		""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" sub15(:pustat)
+'begin' save a, save s, save b, bin, pss, par= m[punch * 4 + 64], geh,
+	transbin, ret, puhep = '640 000 002', ce, instr0, instr1, l0, l1
+  save a = a
+  save s = s
+  save b = b
+  b = (:instr1 - :instr0)
+  ce = b		" aantal entries
+l1:
+  do(instr0[b - 1])	" s:= waarde
+  b = -4		" vier ponsingen
+  rcsa(21)		" bit 26 - 21 nog in s
+  s '*' '77'		" andere bits 0
+l0:
+  geh = s
+  s = geh
+  clp			" is pariteit oneven?
+n,s + '200'		" voeg bit toe
+u,s = in sim, z	" simulatie?
+n,goto(:transbin)	" nee, pons dan via charon
+  (puhep)		" pons via simulator
+  ifon(punch)		" gelijke monniken, gelijke bitten
+ret:
+  b + 1, z		" vier ponsingen gedaan ?
+n,s = 0
+n,lcsa(7)		" zeven nieuwe bits
+n,goto(:l0)		" en herhaal
+  b = 1
+  minb(ce), z		" drie entries gehad ?
+n,goto(:l1)
+  a = save a
+  s = save s
+  b = save b
+  gotor(link15)	" anders exit
+
+term:
+  s = d18
+  s - 1
+  link15 = s		" alle een-bit registers 0, ot:= dyst
+  s = '177'
+  b = -1		" 1 symbool
+  ce = -b		" 1 ponsing
+  goto(:l0)
+
+transbin:
+  bin = s		" in bin opslaan
+  s = :pss[1]		" leegwijzer
+  par = s		" naar ar0
+  par[1] = s		" ift van apparaatregister
+  s = pss[2]		" s := d18 + ...
+  par[2] = s		" naar aft
+  afon(punch)		" start de bandponser
+  s = par[1]		" ift
+  rus(18), z		" tellingdeel 0?
+y,jump(-3)
+  goto(:ret)
+
+pss:			" startschakel
+  +0			" slotwoord
+  :pss[1]		" geen volgende schakel
+  ('1000000' + :bin[-1])" tel := 1, adr:= bin
+bin:
+  'skip' 1
+
+save a: 'skip' 1
+save s: 'skip' 1
+save b: 'skip' 1
+
+geh: 'skip' 1
+ce: 'skip' 1
+
+instr0:
+  s = link15
+  s = save s
+  s = save a
+instr1:
+
+'end' " pustat, term
+
+
+crash1:		""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" sub(:crash1),
+			" stopt het programma, en wel als volgt:
+			" op de x8:	bt = 0: in adresingreep, ai
+			"		bt = 1: in loop
+			" in de simulator:
+			"		bt = 0: in adresingreep
+			"		bt = 1: op de opdracht ofoff
+'begin'
+  ovoff
+  a = d25
+  a '*' t, z		" in bestuurtoestand ?
+y,goto(sgn bit)	" adresfout, statische stop
+  jump(-1)		" stop in loop
+'end' crash1
+
+
+subc test:		""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" sub2(:subc test)
+			" de stapelende subroutinesprong die in het
+			" s-register wordt meegegeven, wordt uitgevoerd met
+			" een aantal verschillende waarden van b, terwijl
+			" de kleine registers gezet worden volgens
+			" bit25 - bit18 van a.
+'begin' nextb, blist0, blist1, return, prot, addr, int words, reg mask,
+	registers, save wa, instr
+  instr = s
+  a '*' reg mask	" kleine registers bij aanroep
+  registers = a
+  f = wa		" (wa, pr)
+  save wa = f
+  f = int words	" voor het opvangen van
+  wa = f		" foutadres- en protectieingrepen
+  a = (:blist1-:blist0) " lengte van de lijst
+  count = a
+  g = :blist0[-1]	" g loopt over de lijst
+next b:
+  g + 1
+  b = mg		" lopende waarde van b
+  a = '777'		" indicatie
+  s = registers	" zet eenbit-registers
+  jumpr(s)		" zoals verlangd
+  do(instr)		" ingreep (foutadres- of protectie-) of
+			" normaal verloop
+  a = - '777'		" indien normaal uitgevoerd (en teruggekeerd),
+  goto(mt[-1])		" forceer dan een adresingreep
+return:
+  repp(:next b)	" volgende
+  f = save wa
+  wa = f		" herstel (wa, pr)
+  gotor(link2)
+
+prot:
+  a '*' lp1		" indicatie
+  jump(1)
+addr:
+  a '*' lp0		" indicatie
+  s = b
+  sub15(:pustat)	" pons status
+			" na sommige ingrepen bij een subc-opdracht is de
+			" waarde van t ongedefinieerd en de link dus
+  goto(:return)	" onbruikbaar. we springen daarom rechtstreeks terug
+
+int words:
+  goto(:addr)
+  goto(:prot)
+reg mask:
+  '377 000 000'
+
+blist0:
+	    '0'
+	    '1'
+	   '50'	" tussen ingreepplaatsen en registers
+	     :d
+  :gate list[-1]
+  :gate list
+  :gate list[63]
+  :gate list[64]
+  (mem length / 2)
+  (mem length - 1)
+  (mem length)
+    '1 000 000'
+  '100 000 000'
+  ('377 000 000' + memlength - 1)
+			" grootst mogelijke veilige waarde van b
+  '400 000 000'
+  -0
+blist1:
+
+instr:
+  'skip' 1
+registers:
+  'skip' 1
+save wa:
+  'skip' 2
+'end' subc test
+
+
+do ff:			""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" sub2(:do ff), voert een in s meegegeven transput-
+			" bestuursopdracht voor een aantal apparaten uit
+'begin' next, list0, list1
+  a = (:list1 - :list0) " lengte van de lijst
+  count = a		" in 'count'
+  g = :list0[-1]	" g loopt over de lijst
+  b = test dev 2
+next:
+  g + 1
+  a = s		" copie van de opdracht
+  a + mg		" vorm opdracht,
+  do(a)		" en voer hem uit
+  repp(:next)
+  gotor(link2)
+
+list0:
+  (test dev 1)		" eerste woord
+  '4 000 000'		" (b), tweede woord
+  ('4 000 000' + test dev 3 - test dev 2)
+			" (b + n), administratief apparaat
+list1:
+'end' do ff
+
+
+dyst s:		""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" subc(:dyst s)
+'begin'
+  s + dyst nbt		" vorm dynamisch stopadres
+  gotor(s)		" zet het in t
+'end'
+
+
+set prot:		""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" sub8(:set prot), zet de protectiebits van alle
+			" halve kasten zoals aangegeven in s
+'begin' loop, max addr, half module = '20 000'
+  a = -max addr
+loop:
+  b = :s
+  memprot
+  s + half module	" vorm volgend protectiewoord
+  a + half module, z	" beschrijft  s  de eerste niet-aanwezige kast?
+n,goto(:loop)
+  gotor(link8)
+
+max addr:
+  (mem length)
+'end' set prot
+
+
+dummy:			""""""""""""""""""""""""""""""""""""""""""""""""""""
+			" subc(:dummy)
+  gotor(mc[-1])
+dummy addr:
+  :dummy
+
+
+
+
+""""""""""""""""""""""""""""""""" tests """"""""""""""""""""""""""""""""""""
+
+entry:
+  lvifoff(punch)	" leg de bandponser het zwijgen op
+
+" testprogramma voor adresseringsvormen
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 0		" :stat
+  s = -0		" -:stat
+  sub15(:pustat)	" pons status
+  s = clist		" stat
+  a = -clist		" stat
+  sub15(:pustat)	" pons status
+  b = :clist[1]	" beginwaarde
+  s = m[b]		" statb
+  a = -m[b - 2]	" - statb
+  sub15(:pustat)	" pons status
+  g = :clist
+  s = mg[-256]		" dyn
+  a = mg[+255]
+  sub15(:pustat)	" pons status
+  a = :clist[2]
+  s = ma[5]		" dyn
+  sub15(:pustat)	" pons status
+  s = :clist[-250]
+  a = ms[255]		" dyn
+  sub15(:pustat)	" pons status
+  s = mc		" dyn, b-mod
+  a = mc		" dyn, b-mod
+  sub15(:pustat)	" pons status
+  a = mt		" dym, t-mod
+  s = mt		" dyn, t-mod
+  sub15(:pustat)	" pons status
+  d = b		" d wijst nu midden in de instructies
+  a = md[-0]		" dyn
+  s = md[0]		" dyn
+  sub15(:pustat)	" pons status
+  b = :stack
+  d = b		" d wijst naar een lijst van 58 woorden
+  a = :rest
+  m[b] = a		" md[0] wijst naar 'rest'
+  ma = b		" m0[0] gevuld zonder gebruik van mp[q]-adressering
+  a + 1		" :rest[1]
+  m[b + 57] = a	" md[57] = :rest[1]
+  ma[10] = g		" m57[10] = g
+  a = m0		" mp[q]
+  s = m57[+10]		" mp[q]
+  sub15(:pustat)	" pons status
+  a = 10
+  md[1] = a		" md[1] wijst nu naar m[10]
+  ma[-10] = b
+  s = m1[-10]		" mp[q], levert als adres: 0
+  sub15(:pustat)	" pons status
+  b = :rest		" stack pointer
+  mc = -a		" dyn = a, b-mod
+  mc =	s
+  mc = -b
+  s = rest		" bekijk resultaat
+  a = rest[1]
+  sub15(:pustat)	" pons status
+  s = rest[2]
+  a = b		" is b juist?
+  sub15(:pustat)	" pons status
+  b = :t
+  a = m[b]		" statb mag de registers adresseren
+  s = m[b + (:g - :t)]	" moet bij g uitkomen
+  sub15(:pustat)	" pons status
+" aangezien voor dyn-adressering het :dyn-adresseringsmechanisme
+" gebruikt wordt, behoeft dit niet afzonderlijk getest te worden,
+" behalve voor de constructie :mc
+  b = :stack
+  s = :mc[-256]	" :dyn
+  a = b
+  sub15(:pustat)	" pons status
+  a = -:mc[255]	" :dyn
+  s = b
+  sub15(:pustat)	" pons status
+
+" test bepaling pariteitsbit, en conditie-zetting op integers
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = lp1		" lp:= 1
+  sub15(:pustat)	" pons status
+  s = lp0		" lp:= 0
+  sub15(:pustat)	" pons status
+  s = -lp1
+  sub15(:pustat)	" pons status
+  s = -lp0		" maakt niks uit
+  sub15(:pustat)	" pons status
+  s = 0, p		" c:= 0, lt:= 0
+  sub15(:pustat)	" pons status
+  s = -0, p		" c:= 1, lt:= 1
+  sub15(:pustat)	" pons status
+  s =  0, z		" c:= 0, lt:= 0
+  sub15(:pustat)	" pons status
+  s = -0, z		" c:= 0, lt:= 1
+  sub15(:pustat)	" pons status
+  s = sgn bit, z	" c:= 1, lt:= 1
+  sub15(:pustat)	" pons status
+  s = -0, e		" c:= 0, lt:= 1
+  sub15(:pustat)	" pons status
+  s =  0, e		" c:= 1, lt:= 0
+  sub15(:pustat)	" pons status
+
+" test opdrachtherkenning
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 5
+  m[0] = a
+  a = -4
+  a + m[0]		" 0 als opdracht
+  b = -3
+  b + m[0]		" -max int als opdracht
+  s = b
+  sub15(:pustat)	" pons status
+  s = :rest[-255]
+  d = s
+  s = lp0		" bitpatroon
+  rest = s		" in rest
+  s = dyst nbt, z	" ander bitpatroon, c:= 1
+n,s '*' -md[255], e	" max int als opdracht
+  sub15(:pustat)	" pons status
+			" -0 is geen opdracht
+
+" test aritmetische bewerkingen in a-, s- of b-register
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = lp0, z		" c:= 1
+  s + lp1, z		" c:= 0, lt:= 1, s:= -0
+  a = sgn bit
+  a + sgn bit		" of:= 1, a:= 1
+  sub15(:pustat)	" pons status
+u,jump(0)		" of:= 0
+  s = -sgn bit
+  s - sgn bit		" of:=1, s:= -1
+  sub15(:pustat)	" pons status
+u,jump(0)
+  s = -sgn bit		" s:= 2**26 - 1
+  b = :rest		" b > 0
+  m[b] = s
+  mc + b		" b bij m[b] geteld, overflow, b verhoogd
+  s = b
+  a = rest
+  sub15(:pustat)	" pons status
+  b = :stack
+  s + :mc		" s + :dyn
+  a = b
+  sub15(:pustat)	" pons status
+  b - :mc		" b = -0
+  a = :mc		" a = +0
+  s = b
+  sub15(:pustat)	" pons status
+  b = :stack
+  m[b] = b		" stack := :stack
+  plusb(mc[0]), z	" stack:= (:stack * 2), b:= (:stack * 2) + 1, c:= 1
+  a = stack
+  s = b
+  sub15(:pustat)	" pons status
+
+" test logische operaties op a en s
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = lp0		" s0
+  a = lp1		" a0
+  s '+' a		" s:= s0 '+' a0
+  a '+' s		" a:= a0 '+' s0 '+' a0 = a0 '+' a0 '+' s0 = s0
+  s '+' a		" s:= s0 '+' a0 '+' s0 = a0 '+' 0 = a0
+  sub15(:pustat)	" pons status
+  a = -lp0
+  a '*' - lp1		" a = -lp0 '*' -lp1 = -(lp0 } lp1)
+  s = -a		" s = lp0 } lp1 = -0
+  sub15(:pustat)	" pons status
+
+" test vermenigvuldiging en deling
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = 10 000, p	" c = 0
+  muls(lp0), z		" c = 1
+  sub15(:pustat)	" pons status
+  s = lp0		" s > 0
+  a = lp1		" a < 0
+  g = 1
+  mulas(g), p		" s * 1 + a = -0
+  sub15(:pustat)	" pons status
+  a = 0
+  s = -0
+  g = -1
+  mulas(g)		" s * -1 + a = +0
+  sub15(:pustat)	" pons status
+  a = 0
+  s = 0
+  divas(1), z		" a = s = c = 0
+  sub15(:pustat)	" pons status
+  divas(-1), z		" a = s = -0, c= 0
+  sub15(:pustat)	" pons status
+" zie verder de afzonderlijke testprogramma's voor muls, mulas, diva, divas
+
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = -1, z		" c:= 1
+  lus(25)		" s:= -2**25
+  tenas, z		" a:= -5, s:= -0, c = 0
+  sub15(:pustat)	" pons status
+
+" tests voor shift-instructies
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = lp0
+  s = lp1
+  b = 9
+  lca(b), p
+  sub15(:pustat)	" pons status
+  lcs(b + 1), e
+  sub15(:pustat)	" pons status
+  lcas(b + 2), p
+  sub15(:pustat)	" pons status
+  lcsa(b + 3), e
+  sub15(:pustat)	" pons status
+  rca(b + 4), e
+  sub15(:pustat)	" pons status
+  rcs(b + 5), p
+  sub15(:pustat)	" pons status
+  rcas(b + 6), e
+  sub15(:pustat)	" pons status
+  rcsa(b + 7), p
+  sub15(:pustat)	" pons status
+  b = 1
+  lua(b + 6),e
+  sub15(:pustat)	" pons status
+  lus(b + 5),p
+  sub15(:pustat)	" pons status
+  luas(b + 4), p
+  sub15(:pustat)	" pons status
+  lusa(b + 3), e
+  sub15(:pustat)	" pons status
+  a = lp0
+  s = lp1
+  rua(b + 6), p
+  sub15(:pustat)	" pons status
+  rus(b + 1), p
+  sub15(:pustat)	" pons status
+  ruas(b + 4), e
+  sub15(:pustat)	" pons status
+  rusa(b + 0), e
+  sub15(:pustat)	" pons status
+" zie verder het afzonderlijke testprogramma voor shifts
+
+" test normeer-instructies
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 0
+  nora, z		" a:= 0, b:= 26
+  s = b
+  sub15(:pustat)	" pons status
+  a = -b		" a:= -26
+  nora, z
+  s = b
+  sub15(:pustat)	" pons status
+  a = 0
+  s = sgn bit, z	" c = 1
+  noras, z		" c = 0, schuift om tekenbit van s heen
+  sub15(:pustat)	" pons status
+  s = b		" b = 52
+  sub15(:pustat)	" pons status
+  a = -0
+  s = -sgn bit
+  noras, p		" c = 1, schuift om tekenbit heen
+  sub15(:pustat)	" pons status
+  s = b		" b = 52
+  sub15(:pustat)	" pons status
+
+" test f-transport
+  jumpr(0)		" alle eenbit-registers worden 0
+  b = :lp0
+  f = mc, p
+  rest = -f
+  a = rest
+  s = rest[1]
+  sub15(:pustat)	" pons status
+  s = b
+  sub15(:pustat)	" pons status
+
+" test conditie-zetting, of, nint op f-opdrachten
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 0
+  s = -0
+  f = a, p		" c = 0, of = 1, nint = 0
+  sub15(:pustat)	" pons status
+  a = -0
+  s = 0
+  f = a, p		" c = 1, of = 1, nint = 0
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 0
+  s = 0
+  f = -a, z		" c = 0, of = 0, nint = 0
+  sub15(:pustat)	" pons status
+  a = 0
+  s = -0
+  f = a, z		" c:= 1, of = 0
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 0
+  s = sgn bit
+  f = a, z
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = d13t0		" '37777'
+  s = 0
+  f = a, p		" nint = 0
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = -a
+  f = a, p		" nint = 0
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = d14t0		" '77777'
+  f = a, p		" nint = 1
+  sub15(:pustat)	" pons status
+
+" test verdere f- en g- opdrachten
+  jumpr(0)		" alle eenbit-registers worden 0
+  b = :rest
+  mc = f		" x = f
+  a = rest
+  s = rest[1]
+  sub15(:pustat)	" pons status
+  s = b
+  sub15(:pustat)	" pons status
+  g = -1
+  a = f		" -0
+  s = g		" -1
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = 1
+  s = 1
+  f = a		" fh = 1, ft = 1
+  b = :rest
+  mc = g		" nint:= 1
+  s = b
+  sub15(:pustat)	" pons status
+  a = -0
+  f = a
+  jumpr(0)		" alle eenbit-registers worden 0
+  rest = g		" nint:= 1, wegens tekeninconsistentie
+  sub15(:pustat)	" pons status
+  f = :mc		" f = :dyn
+  a = f		" bekijk
+  s = g		" resultaat
+  sub15(:pustat)	" pons status
+  s = b		" is b niet veranderd ?
+  sub15(:pustat)	" pons status
+  f = fp0
+  f + fp2, e		" +
+  a = f		" bekijk
+  s = g		" resultaat
+  sub15(:pustat)	" pons status
+  f = fp0
+  f - fp2, e		" -
+  a = f		" bekijk
+  s = g		" resultaat
+  sub15(:pustat)	" pons status
+  f = fp0
+  f * fp2, e		" *
+  a = f		" bekijk
+  s = g		" resultaat
+  sub15(:pustat)	" pons status
+  f = fp0
+  f / fp2, e		" /
+  a = f		" bekijk
+  s = g		" resultaat
+  sub15(:pustat)	" pons status
+  jumpr(0)		" alle eenbit-registers worden 0
+  g = lp0
+  g + lp1, e
+  a = f
+  s = g
+  sub15(:pustat)	" pons status
+  g = lp0
+  g - lp1, e
+  a = f
+  s = g
+  sub15(:pustat)	" pons status
+  g = lp0
+  g * lp1, e
+  a = f
+  s = g
+  sub15(:pustat)	" pons status
+  g = lp0
+  g / lp1, e
+  a = f
+  s = g
+  sub15(:pustat)	" pons status
+
+" test sprong-opdrachten
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = gotol1		" sprong-opdracht
+  m[0] = s		" in m[0]
+  s = 1
+  lus(25)		" s = 2**25 + 0
+  goto(s)		" s-ster = 0, -> ot:= 0, en springt vandaar terug
+  sub(:crash1)		" mag niet uitgevoerd worden
+l1:
+  sub15(:pustat)	" pons status
+  s = 0
+  jump(s)		" doet niets
+  a = sgn bit
+  a + a		" of:= 1
+u,jump(1)		" wordt uitgevoerd
+  sub(:crash1)		" mag niet uitgevoerd worden
+  sub15(:pustat)	" pons status
+u,jump(1)		" springt niet
+  s - 1		" wordt uitgevoerd
+  sub15(:pustat)	" pons status
+  b = :mtl1		" b = :mt[q]
+  b + d18
+  goto(:mc[1])		" goto(:dyn), naar mtl1[1]
+mtl1:
+  sub(:crash1)		" mag niet uitgevoerd worden
+  s = b
+  sub15(:pustat)	" pons status
+
+" test repeterende sprongen
+  s = 10
+  count5 = s		" startwaarde
+  a = sgn bit
+  a + a		" of:= 1
+u,rep5(:l2)		" wordt uitgevoerd
+  sub(:crash1)		" mag niet uitgevoerd worden
+l2:
+  s = count5		" is nu 9
+  sub15(:pustat)	" pons status
+  count3 = s
+  a = 0
+l3:
+  a + 1		" te herhalen actie
+  rep3p(:l3)
+  s = count3		" count3 = -0
+  sub15(:pustat)	" pons status
+  s = 12
+  count6 = s
+  a = 0
+l4:
+  a + 1
+  rep6e(:l4)
+  s = count6		" count6 = -1
+  sub15(:pustat)	" pons status
+  count0 = a
+  s = 0
+l5:
+  rep0z(:l6)		" alleen als count0 = 0
+  s + 1
+  goto(:l5)
+l6:
+  a = count0
+  sub15(:pustat)	" pons status
+
+" test subn
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = 0
+  sub(:l7)
+  sub(:crash1)		" mag niet uitgevoerd worden
+l7:
+  a = link
+  sub15(:pustat)	" pons status
+  s = 0, z		" c:= 0
+n,sub3(:l8)		" niet doen
+  s + 1		" wel doen
+l8:
+  sub15(:pustat)	" pons status
+y,sub5(:l9)		" wel doen
+  sub(:crash1)		" mag niet uitgevoerd worden
+l9:
+  a = link5
+  sub15(:pustat)	" pons status
+  a = sgn bit
+  a + a		" of:= 1
+u,sub8(:l10)		" doen
+  sub(:crash1)		" mag niet uitgevoerd worden
+l10:
+  a = link8
+  sub15(:pustat)	" pons status
+
+" om gotor,jumpr en subc te kunnen testen,
+" moeten we eerst de gedragingen van iv, ov en bt testen
+
+" test ov, iv, bt
+  jumpr(0)		" alle eenbit-registers worden 0
+  ovon
+  sub15(:pustat)	" pons status
+  ovoff
+  sub15(:pustat)	" pons status
+  s = crash
+  ch = s		" charoningreep-plaats
+  ivon
+  ivoff		" geen hele instructie horend
+  s = sub15pustat
+  ch = s		" charoningreep ponst nu status
+  ivon
+  s + 1		" wachten op de klap
+" ingreep komt hier
+  ifoff(ip)		" ip-lezer if weg, alles nu rustig
+  lvifon(punch)
+  lvifoff(punch)	" te kort voor een ingreep
+  b = :zero
+  memprot		" voor alle zekerheid
+
+" test subc
+  jumpr(0)		" alle eenbit-registers worden 0
+  b = :stack
+  subc(:mt)		" ongeveer mc = t, tegelijkertijd subc(:dyn)
+  s = b		" b = :stack[1]
+  a = mc[-1]		" linkc, b := :stack
+  sub15(:pustat)	" pons status
+  a = :dummy		" adres van dummy routine
+  mc = a		" wordt op stapel gelegd, b := :stack[1]
+  subc(mc[-1])		" sprongadres uit stack[1-1], b:= :stack[0],
+			" link naar stack[0], b:= :stack[1], dus
+			" link wordt over sprongadres heengeschreven
+			" dummy routine bestaat uit gotor(mc[-1]),
+			" verlaagt dus b
+  a = stack		" moet de link zijn
+  s = b		" b = :stack
+  sub15(:pustat)	" pons status
+
+  a = ov bit		" in bestuurtoestand
+  s = subc dummy	" subc, direct
+  sub2(:subc test)
+  a = ov bit		" in bestuurtoestand
+  s = subc dummy addr	" subc, inhoudelijk
+  sub2(:subc test)
+  a = ov bit		" in bestuurtoestand
+  s = subc gate	" protectiepoort, direct
+  sub2(:subc test)
+  a = ov bit		" in bestuurtoestand
+  s = subc gate addr	" protectiepoort, inhoudelijk
+  sub2(:subc test)
+
+" gotor is voor het grootste deel al getest
+  s = t
+  s '*' -sgn bit	" s:= link
+  s + 4		" correctie
+  gotor(s)
+  sub(:crash1)		" mag niet uitgevoerd worden
+			" sprong moet hier terechtkomen
+  sub15(:pustat)	" pons status
+
+" test bt, het verlaten van de bestuurstoestand
+" voor het ponsen van resultaten wordt een fout-adres-ingreep gebruikt
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = sub15pustat
+  wa = s		" fout-adres-ingreep plaats
+  s = d25		" '200 000 000'
+  jumpr(s)		" bt:= 0, iv:= ov:= 1
+  s = t		" bekijk resultaat
+  goto(mt[-1])		" ingreep, om status te ponsen
+  jumpr(0)		" zal nu niet baten
+  goto(mt[-1])		" ingreep, om status te ponsen
+  b = :stack
+  s = t		" bekijk toestand in de wereld
+  subc(:punch gate)	" protectiepoort, :stat, komt terug met bt = 0
+  s = t		" bekijk toestand in de wereld
+  subc(punch gate addr) " protectiepoort,  stat, komt terug met bt = 0
+  s = t		" bekijk toestand in de wereld
+  goto(mt[-1])		" ingreep, om status te ponsen
+  subcd(:mt)		" = subc(:mt) als bt = 0
+  s = mc[-1]		" link
+  goto(mt[-1])		" ingreep, om status te ponsen
+  subc(:open gate)	" bt = 1, iv = 0, ov = 1
+  sub15(:pustat)	" pons status
+  ivon			" iv:= 1
+  sub15(:pustat)	" pons status
+  subcd(:mt)		" iv:= 0
+  s = t		" meteen kijken
+  a = mc[-1]
+  sub15(:pustat)	" pons status
+
+" test ov _t_i_j_d_e_n_s foutingreep  en
+" tekenconsistentie van t (d26 = d18) tijdens subc
+  ovon
+  s = read t		" s = t
+  wa = s
+  a = -1, p		" c:= 1
+  subc(ma)		" adresingreep, iv:= 0, ov:= 0
+  sub15(:pustat)	" pons status
+
+" test do, dos
+  jumpr(0)		" alle eenbit-registers worden 0
+  do(amt255)		" a = :mt[255]
+  do(smt)		" s = mt
+  sub15(:pustat)	" pons status
+  b = :stack
+  s = sub15pustat
+  mc = s		" instructie op stapel
+  a = sgn bit
+  a + a		" of:= 1
+u,do(mc[-1])
+  a = b
+  sub15(:pustat)	" pons status
+  a = -:s, p		" a = -60, c = 1
+  s = lp0		" altijd goed
+n,dos(s)		" s = :s, do(s), a+s, a:= -0
+  sub15(:pustat)	" pons status
+
+" test clp, int
+  jumpr(0)		" alle eenbit-registers worden 0
+  a = lp1		" lp:= 1
+  clp			" c:= 1
+  sub15(:pustat)	" pons status
+  s = lp0		" lp:= 0
+  clp			" c:= 0
+  sub15(:pustat)	" pons status
+  g = 1
+  f / 2
+  mc = g		" nint:= 1
+  sub15(:pustat)	" pons status
+  int			" nint:= 0, c:= 1
+  sub15(:pustat)	" pons status
+u,int			" nint:= 0, c:= 1
+  sub15(:pustat)	" pons status
+
+" test snelle registertransporten
+  a = 0
+  s = lp1
+  '660 000 440'	" tras
+  sub15(:pustat)	" pons status
+  a = 0
+  '660 100 440'	" u, tras
+  sub15(:pustat)	" pons status
+  a = -1, z		" c = 1
+  '670 500 402'	" u,trbna,p , c:= 0
+  s = b
+  sub15(:pustat)	" pons status
+  '671 400 501'	" trsnb,e , c:= 1
+  sub15(:pustat)	" pons status
+
+" test van de transput bestuur- en leesopdrachten
+" de opdrachten afon en afoff worden niet getest
+  ivoff
+  s = ifon0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  ifa(0)
+  ifs(b + 1)
+  sub15(:pustat)	" pons status
+  s = ifoff0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  ifa(b)
+  ifs(1)
+  sub15(:pustat)	" pons status
+  s = lvifoff0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  lvifa(0)
+  lvifs(b + 1)
+  sub15(:pustat)	" pons status
+  s = lvifon0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  lvifa(b)
+  lvifs(1)
+  sub15(:pustat)	" pons status
+
+  s = ifon0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  a = lp0		" d25 = 1, d12 = 0
+  ifac(0)
+  s = lp1		" d24 = 1
+  ifsc(b + 1)
+  sub15(:pustat)	" pons status
+  s = ifoff0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  a = lp0		" d25 = 1, d12 = 0
+  ifac(b)
+  s = lp1		" d24 = 1
+  ifsc(1)
+  sub15(:pustat)	" pons status
+  s = lvifoff0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  a = lp0		" d25 = 1, d12 = 0
+  lvifac(0)
+  s = lp1		" d24 = 1
+  lvifsc(b + 1)
+  sub15(:pustat)	" pons status
+  s = lvifon0
+  sub2(:do ff)		" wijzig flipflops
+  b = 0
+  a = lp0		" d25 = 1, d12 = 0
+  lvifac(b)
+  s = lp1		" d24 = 1
+  lvifsc(1)
+  sub15(:pustat)	" pons status
+
+  a = 0, z		" c:= 0
+u,ifa(1), z		" if van bandponser, c:=1
+  sub15(:pustat)	" pons status
+  s = -sgn bit, z	" s:= '377 777 777', c:= 1
+u,ifsc(0), z		" c:= 0
+  sub15(:pustat)	" pons status
+  s = -s, z		" c:= 1
+u,lvifsc(1), z		" sign bit altijd 0, dus c:= 0
+  sub15(:pustat)	" pons status
+  s = sub15pustat
+  ch = s		" charoningreep ponst status
+  ivon			" horend
+  s + 1		" wacht
+  ifon(na dev)		" forceer ingreep op niet-aanwezig apparaat
+			" dat daarvoor geschikt is
+  ifoff(na dev)
+
+" test dynamische stoptoestanden
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = subl14
+  ch = s
+  ifon(ip)		" ip-lezer
+  b = :stack
+  s = 0
+  subc(:dyst s)	" bt:= 0, iv:= 1, ot:= '777 777'
+			" charon ingreep, bt:= 1, iv:= 0
+l14:
+  a = stack		" link voor ingreep
+  s = link		" link na ingreep
+  sub15(:pustat)	" pons status
+  s = subl15
+  ch = s
+  s = dyst nbt		" s:= nbt + '777 777'
+  s - :l15[1]		" s:= nbt + '777 777' - :l15 - 1
+  jumpr(s)		" ot:= '777 777' - :l15 - 1 + :l15 = '777 776',
+			" de tweede dynamische stop
+l15:
+  a = link		" link na ingreep
+  sub15(:pustat)	" pons status
+  ifoff(ip)
+
+" test itvon en pariteitsingreep
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = crash
+  ch = s		" geen charoningreep
+  wa = s		" geen adresingreep
+  s = sub15pustat
+  wp = s		" adres voor pariteitsingreep
+  ovon			" ov:= 1
+  b = :stack
+  itvon
+  mc = s		" stack[0]
+  itvon
+  s = -mc[-1]		" leest foute pariteit, c:= 1
+  a = b
+  sub15(:pustat)	" pons status
+  mc = s		" stack[0]
+  itvon
+  s = -mc[-1]		" leest goede pariteit, c:= 0
+  a = b
+  sub15(:pustat)	" pons status
+  itvon
+  mc = s		" stack[0]
+  itvon
+  s - mc[-1]		" leest foute pariteit, s:= -0
+  a = b
+  sub15(:pustat)	" pons status
+  s + 1
+  mc = s		" stack[0]
+  itvon
+  s + mc[-1]		" leest goede pariteit
+  a = b
+  sub15(:pustat)	" pons status
+  s = mcs		" haal 'mc = s' in s
+  do(s)		" schrijf het op de stack
+  itvon
+  do(mc[-1])		" haal 'mc = s' van de stack, verlaag b,
+			" schrijf s imparitair op de stack en verhoog b
+  do(mc[-1])		" pariteitsfout
+  a = b
+  sub15(:pustat)	" pons status
+
+  rest = s		" rest paritair
+  itvon
+  pluss(rest)		" doet het ook
+  g = rest		" ingreep
+  s = lp0
+  itvon
+  rest = s		" rest imparitair, d.w.z. lp in het geheugen is 1
+  s = zero, p		" lp:= 1, c:= 0
+  itvon
+  s = rest		" lp:= 1, c:= 1
+  sub15(:pustat)	" pons status
+  s = one, p		" lp:= 0, c:= 0
+  itvon
+  s = rest		" lp:= 1, c:= 1
+  sub15(:pustat)	" pons status
+  s = zero, p		" lp:= 1, c:=0
+  itvon
+  s + rest		" lp:= 1, c:= 0
+  sub15(:pustat)	" pons status
+
+			" inhoudelijke sprong door protectiepoort,
+			" waarbij het sprongadres imparitair is
+  s = :dummy gate
+  itvon
+  bad addr = s		" in protectiepoorttraject
+  jumpr(-0)		" bt:=0
+  b = :stack
+  subc(bad addr)	" het adres wordt zonder geheugenprotectie
+			" opgehaald, geeft pariteitsingreep, maar in de link
+			" is toch bt = 1
+  subc(:open gate)	" bt:= 1, nog doof
+
+  s = 0
+  itvon
+  ch = s		" charoningreep met pariteitsfout
+  ifon(ip)		" ip-lezer
+  ivon
+  s + 1		" wachten op de klap
+" charoningreep, geeft pariteitsfout, pariteitsingreep met ov = 0
+  ifoff(ip)		" kan nog net
+
+" test protectiemechanisme
+  jumpr(0)		" alle eenbit-registers worden 0
+  b = :protw		" dp = 0000000011111111,
+  memprot		" gp = 1000010001000000, voor eerste helft m = 0
+  s = b
+  sub15(:pustat)	" pons status
+  s = crash
+  ch = s		" geen charoningreep
+  wa = s		" geen adresingreep
+  wp = s		" geen pariteitsingreep
+  s = sub15pustat
+  pr = s		" ontvankelijk voor protectieingreep
+  s = lp0
+  m[' 4 777'] = s
+  s + 1
+  m[' 5 000'] = s
+  s + 1
+  m['10 000'] = s
+  s + 1
+  m['10 777'] = s
+  s + 1
+  m['11 000'] = s
+  s + 1
+  m['11 777'] = s
+  s + 1
+  m['12 000'] = s
+  jumpr(d25)		" bt:= 0, iv:= ov:= 1
+  s = m['1000']
+  s = m['4777']
+  s = m['5000']	" ingreep
+  m['7777'] = s
+  m['10000'] = s	" ingreep
+  s = m['10000']
+  s = m['10777']
+  s = m['11000']	" ingreep
+  s = m['11777']	" ingreep
+  s = m['12000']
+  d = s		" moet goed gaan
+  s = 1
+  count = s
+l12:
+  repp(:l12)		" count-plaatsen zijn vrij
+  sub7(:l13)		" link0 - link7
+  sub(:crash1)		" mag niet uitgevoerd worden
+l13:
+  sub8(:crash1)	" mag niet goed gaan
+
+  b = :stack
+  subc(punch gate addr) " protectiepoort
+  b = '5000'
+  subc(:crash1)	" dp = 0, gp = 1
+  b = '10000'
+  subc(:crash1)	" dp = 1, gp = 0
+  b = :stack
+  subc(:open gate)	" bt:= 1
+
+  s = 0
+  sub8(:set prot)	" alle dp's en gp's worden 0
+  a = d25		" in niet-bestuurtoestand
+  s = subc dummy	" subc, direct
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc dummy addr	" subc, inhoudelijk
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc gate	" protectiepoort, direct
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc gate addr	" protectiepoort, inhoudelijk
+  sub2(:subc test)
+
+  s = dp on
+  sub8(:set prot)	" alle dp's worden 1, alle gp's 0
+  a = d25		" in niet-bestuurtoestand
+  s = subc dummy	" subc, direct
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc dummy addr	" subc, inhoudelijk
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc gate	" protectiepoort, direct
+  sub2(:subc test)
+  a = d25		" in niet-bestuurtoestand
+  s = subc gate addr	" protectiepoort, inhoudelijk
+  sub2(:subc test)
+
+" test adresingreep
+  jumpr(0)		" alle eenbit-registers worden 0
+  s = crash
+  ch = s		" geen charoningreep
+  wp = s		" geen pariteitsingreep
+  pr = s		" geen protectieingreep
+  s = sub15pustat
+  wa = s
+  a = -1
+  ovon			" was 0, wordt 1
+  a = :ma		" meteen proberen
+  a = :ma[1]		" mag , a:= +0
+  sub15(:pustat)	" pons status
+  a = dyst nbt
+  a = :ma		" a:= a-ster = '777 777', bestaand
+  sub15(:pustat)	" pons status
+  a = :ma[1]		" a-ster + 1 = '1 000 000', niet bestaand,
+			" dus ingreep
+  a = eom1
+  a = :ma		" wel bestaand, mag dus
+  sub15(:pustat)	" pons status
+  a = ma		" niet aanwezig
+  goto(sgn bit)
+  goto(eom1)
+  a = eom1
+  ma = a		" niet aanwezig
+  b = 0
+  subc(:mt)		" moet goed gaan
+  s = b
+  a = mc[-1]		" linkc
+  sub15(:pustat)	" pons status
+  s = dyst nbt
+  s - 2		" niet-bestaande derde dynamische stop
+  goto(s)		" adresingreep. geen gotor(s) wegens moeilijkheden
+			" met bt
+  b = :wa protw	" verwijst naar eerste niet-aanwezige geheugenkast
+  memprot		" staat niet in 't boek, geeft wel ingreep
+  b = -:zero
+  memprot		" idem
+  s = subl16
+  wa = s
+  s = read t
+  a = eom
+  ma[-1] = s		" een na laatste en
+  ma = s		" laatste geheugenplaats bevatten 's = t'
+  goto(:ma[-1])	" ot := eom - 1
+l16:
+  a = link		" ot tijdens de ingreep
+  sub15(:pustat)	" pons status
+
+  sub15(:term)		" einde x8 test
+
+
+
+
+" constanten
+
+one:
+  +1
+ov bit:
+  '100 000 000'
+d25:
+  '200 000 000'
+sgn bit:
+  '400 000 000'
+lp0:
+  '252 525 252'
+lp1:
+  '525 252 525'
+fp0:
+  +.6363636363636	" 7/11
+fp2:
+  -1.571428571429	" -11/7
+d13t0:
+  '37 777'
+d14t0:
+  '77 777'
+d18:
+  '1 000 000'
+eom:
+  (mem length - 1)
+eom1:
+  (mem length)
+dyst nbt:
+  '200 777 777'
+
+" protectiewoorden
+
+zero: +0
+protw:
+  '140 000 104'
+dp on:
+  '060 000 000'
+wa protw:
+  (mem length)
+
+" instructies
+
+mcs:
+  mc = s
+sub15pustat:
+  sub15(:pustat)
+crash:
+  sub(:crash1)		" mag nooit voorkomen
+gotol1:
+  goto(:l1)
+read t:
+  s = t
+amt255:
+  a = :mt[255]
+smt:
+  s = mt
+subc dummy:
+  subc(:dummy)
+subc dummy addr:
+  subc(dummy addr)
+subc gate:
+  subc(:dummy gate)
+subc gate addr:
+  subc(dummy gate addr)
+ifon0:
+  ifon(0)
+ifoff0:
+  ifoff(0)
+lvifon0:
+  lvifon(0)
+lvifoff0:
+  lvifoff(0)
+subl14:
+  sub(:l14)
+subl15:
+  sub(:l15)
+subl16:
+  sub(:l16)
+
+stack:
+  'skip' 58		" ook md-traject
+rest:
+'end'

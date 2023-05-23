@@ -1,0 +1,1917 @@
+_b_e_g_i_n _c_o_m_m_e_n_t x8 simulator: 17-12-71;
+
+  _i_n_t aantal kasten, max addr, bufs, max master;
+  aantal kasten:= 4;
+  bufs:= 3000;
+  max master:= 512;
+  max addr:= aantal kasten * 2 ^ 14 - 1;
+
+_b_g_n
+  _r_e_a_l fh, ft, a, s, b, ot, c, iv, lt, of, last par word,
+	 nint, ov, bt, or, m, addr, cg, itv, ingreep type, dyst stat;
+
+  _c_o ingreep type   betekenis:
+	    0         geen ingreep
+	    1         charon/sleutelingreep
+	    2         foutingreep
+	    3         foutingreep tijdens charon/sleutelingreep   ;
+
+  _r_e_a_l val, valh, valt, ah, at, sh, st, hulp1, hulp2, hulp3;
+  _b_o_o_l addrop, regop, memop, mcaddr, flag, nega, negs, subcd, gate,
+	 prot;
+
+  _s_w_i_t_c_h dsw:= basis cyclus 1;
+
+  _i_n_t _p_r_o_c randbit; randbit:= random;
+
+  _i_n_t _p_r_o_c randint;
+  _b_g_n _r_e_a_l x;
+      x:= entier((entier(random * tp13) + random) * tp14);
+      randint:= _i_f x _> tp26 _t_h_e_n x - tp27m1 _e_l_s_e x
+  _e_n_d randint;
+
+  _p_r_o_c init x8;
+  _b_g_n
+    fh:= randint; ft:= randint; a:= randint; s:= randint; b:= randint;
+    ot:= and(randint, tp18m1); or:= randint;
+    c:= randbit; iv:= randbit; lt:= randbit; of:= randbit;
+    last par word:= randint; nint:= randbit; ov:= randbit; bt:= randbit;
+    m:= addr:= cg:= itv:= ingreep type:= dyst stat:= 0;
+    prot:= bt = 0
+  _e_n_d init x8;
+
+  _p_r_o_c memreg;
+  _i_f mem op _t_h_e_n mem1 _e_l_s_e
+  _b_g_n m:= _i_f addr < 59 _t_h_e_n
+	   (_i_f addr = 57 _t_h_e_n fh _e_l_s_e ft) _e_l_s_e
+	    _i_f addr < 61 _t_h_e_n
+	   (_i_f addr = 59 _t_h_e_n a _e_l_s_e s) _e_l_s_e
+	    _i_f addr = 61 _t_h_e_n b _e_l_s_e
+		   tlink + (_i_f c = 0 _t_h_e_n 0 _e_l_s_e -tp26m1)
+  _e_n_d memreg;
+
+  _r_e_a_l _p_r_o_c compf(h,t); _v_a_l h,t; _r_e_a_l h,t;
+  compf:= compose(h,set(bit(14, h), 26, 26, t));
+
+  _b_o_o_l _p_r_o_c signinc;
+  signinc:= bit(14, valh) #
+	   (_i_f 1/valt > 0 _t_h_e_n 0 _e_l_s_e 1);
+
+  _p_r_o_c b up1;
+  _b_g_n _i_f 1/b < 0 _t_h_e_n undef(335); b:= b + 1 _e_n_d b up1;
+
+  _p_r_o_c bdown1;
+  _b_g_n b:= -(1 - b); _i_f b < 0 _t_h_e_n undef(330) _e_n_d bdown1;
+
+  _p_r_o_c b up2;
+  _b_g_n _i_f 1/b < 0 _t_h_e_n undef(336); b:= b + 2 _e_n_d b up2;
+
+  _p_r_o_c bdown2;
+  _b_g_n b:= -(2 - b); _i_f b < 0 _t_h_e_n undef(331) _e_n_d bdown2;
+
+  _r_e_a_l _p_r_o_c star(x); _v_a_l x; _r_e_a_l x;
+  _b_g_n _c_o only for abs(x) > tp18m1;
+    y:= x - x % tp18 * tp18;
+    star:= _i_f y = 0 & x > 0 _t_h_e_n 0 _e_l_s_e y
+  _e_n_d star;
+
+  _r_e_a_l _p_r_o_c tlink;
+  tlink:= ot +
+    (_i_f c  = 0 _t_h_e_n 0 _e_l_s_e tp18) +
+    (_i_f iv = 0 _t_h_e_n 0 _e_l_s_e tp19) +
+    (_i_f lt = 0 _t_h_e_n 0 _e_l_s_e tp20) +
+    (_i_f of = 0 _t_h_e_n 0 _e_l_s_e tp21) +
+    (_i_f parbit(last par word) = 0 _t_h_e_n 0 _e_l_s_e tp22) +
+    (_i_f nint = 0 _t_h_e_n 0 _e_l_s_e tp23) +
+    (_i_f ov = 0 _t_h_e_n 0 _e_l_s_e tp24) +
+    (_i_f bt # 0 _t_h_e_n 0 _e_l_s_e tp25);
+
+  _p_r_o_c calc addr;
+  _b_g_n mcaddr:= _f_a_l_s_e;
+    _i_f b20c19 < 3 _t_h_e_n
+    _b_g_n _c_o stat, :stat, statb;
+      _i_f b20c19 < 2 _t_h_e_n
+      _b_g_n addr:= b14t0; addrop:= b20c19 = 1 _e_n_d _e_l_s_e
+      _b_g_n addrop:= _f_a_l_s_e;
+	addr:= (_i_f abs(b) > tp18m1 _t_h_e_n b - b % tp18 * tp18
+				     _e_l_s_e b) + b14t0 - tp14
+      _e_n_d;
+      reg op:= ~addrop & addr > 56 & addr < 63
+    _e_n_d _e_l_s_e
+    _b_g_n
+      b14t9:= b14t0 % tp9; b8t0:= b14t0 - b14t9 * tp9;
+      _i_f b14t9 > 57 _t_h_e_n
+      _b_g_n _c_o mr;
+	_i_f b14t9 = 63 _t_h_e_n
+	_b_g_n
+	  _i_f ~filled[63] _t_h_e_n undef(25401);
+	  x:= m0[63]; ccs:= ccs + 2;
+	  _i_f trace _t_h_e_n report reading(63, x);
+	_e_n_d _e_l_s_e
+	  x:= _i_f b14t9 < 61 _t_h_e_n
+	    (_i_f  b14t9 = 58 _t_h_e_n ft _e_l_s_e
+	     _i_f  b14t9 = 59 _t_h_e_n  a _e_l_s_e s) _e_l_s_e
+	     _i_f  b14t9 = 61 _t_h_e_n  b _e_l_s_e ot
+      _e_n_d mr _e_l_s_e
+      _b_g_n _c_o mpq;
+	_i_f ~filled[63] _t_h_e_n undef(25402);
+	y:= m0[63]; ccs:= ccs + 2;
+	_i_f trace _t_h_e_n report reading(63, y);
+	_i_f abs(y) > tp18m1 _t_h_e_n y:= y - y % tp18 * tp18;
+	_i_f y < 64 _t_h_e_n undef(332);
+	cg:= 0; addr:= y + b14t9; mem1; x:= m;
+      _e_n_d mpq;
+      addr:= (_i_f abs(x) > tp18m1 _t_h_e_n x - x % tp18 * tp18
+				   _e_l_s_e x) + b8t0 - tp8;
+      _i_f addr > 56 & addr < 63 _t_h_e_n undef(333); reg op:= _f_a_l_s_e;
+      addrop:= b20c19 = 4;
+      mcaddr:= b14t9 = 61 & ~addrop
+    _e_n_d dyn, :dyn;
+    _i_f addr < 0 _t_h_e_n undef(26320) _e_l_s_e
+    _i_f addr = 0 _t_h_e_n addr:= 0 _e_l_s_e
+    _i_f addr > tp18m1 _t_h_e_n undef(26321);
+    mem op:= ~ (addrop ! reg op)
+  _e_n_d calc addr;
+
+  _p_r_o_c condf;
+  _b_g_n _c_o conditiezetting op floating point getal
+	     in valh en valt;
+    x:= bit(14, valh);
+    c:=
+      _i_f b18c17 = 1 _t_h_e_n x _e_l_s_e
+      _i_f b18c17 = 2 _t_h_e_n
+       (_i_f valt # 0 _t_h_e_n 1 _e_l_s_e
+	_i_f and(valh, tp14m1)=(_i_f 1/valt > 0 _t_h_e_n 0 _e_l_s_e tp14m1)
+	  _t_h_e_n 0 _e_l_s_e 1) _e_l_s_e
+      _i_f lt = x _t_h_e_n 0 _e_l_s_e 1;
+    lt:= x
+  _e_n_d condf;
+
+  _p_r_o_c cond;
+  _b_g_n _c_o conditiezetting op 27-bits woord in val;
+    x:= _i_f (_i_f val = 0 _t_h_e_n 1/val _e_l_s_e val) > 0
+	_t_h_e_n 0 _e_l_s_e 1;
+    c:= _i_f b18c17 = 1 _t_h_e_n x _e_l_s_e
+	_i_f b18c17 = 2 _t_h_e_n (_i_f val = 0 _t_h_e_n 0 _e_l_s_e 1) _e_l_s_e
+	_i_f lt = x _t_h_e_n 0 _e_l_s_e 1;
+    lt:= x
+  _e_n_d cond;
+
+_c_o begin pariteitsberekening;
+
+  _i_n_t_e_g_e_r _a_r_r_a_y parlist[0:511];
+
+  _i_n_t_e_g_e_r _p_r_o_c_e_d_u_r_e parbit(bin); _v_a_l_u_e bin; _r_e_a_l bin;
+  _b_e_g_i_n _r_e_a_l x, y;
+    _i_f (_i_f bin = 0 _t_h_e_n 1/bin _e_l_s_e bin) < 0 _t_h_e_n
+      bin:= bin + tp27m1;
+    x:= bin % 512; y:= x % 512;
+    x:= parlist[bin - x * 512] + parlist[x - y * 512] + parlist[y] + 1;
+  rep:
+    _i_f x > 1 _t_h_e_n _b_e_g_i_n x:= x - 2; _g_o_t_o rep _e_n_d _m_o_d 2;
+    parbit:= x
+  _e_n_d parbit;
+
+  _p_r_o_c init parlist;
+  _b_e_g_i_n _i_n_t i,j;
+    parlist[0]:= 0;
+    _f_o_r i:= 1, i + i _w_h_i_l_e i _< 256 _d_o
+    _f_o_r j:= 0 _s_t_e_p 1 _u_n_t_i_l i - 1 _d_o
+    parlist[i+j]:= 1 - parlist[j]
+  _e_n_d init parlist;
+
+_c_o einde pariteitsberekening;
+
+_c_o begin memory simulation;
+
+  _p_r_o_c bring in(region); _r_e_a_l region;
+  _i_f m3p = 0 _t_h_e_n
+  _b_g_n _i_f m2p = 0 _t_h_e_n
+    _b_g_n _i_f m1p = 0 _t_h_e_n
+      _b_g_n m1p:= region; m1l:= m cnt _e_n_d _e_l_s_e
+      _b_g_n m2p:= region; m2l:= m cnt _e_n_d
+    _e_n_d _e_l_s_e
+    _b_g_n m3p:= region; m3l:= m cnt _e_n_d
+  _e_n_d unused regions _e_l_s_e
+  _b_g_n
+
+    _p_r_o_c transp(m, mp); _i_n_t mp; _i_n_t _a_r m;
+    _b_g_n
+      to drum(m, mp * bufs);
+      mp:= region; drum cnt:= drum cnt + 1;
+      from drum(m, mp * bufs)
+    _e_n_d transp;
+
+    _i_f m1l > m2l _t_h_e_n
+    _b_g_n
+      _i_f m2l > m3l _t_h_e_n transp(m3, m3p)
+		     _e_l_s_e transp(m2, m2p)
+    _e_n_d m2 of m3 _e_l_s_e
+    _i_f m1l > m3l _t_h_e_n transp(m3, m3p)
+		   _e_l_s_e transp(m1, m1p)
+  _e_n_d bring in;
+
+  _p_r_o_c stm;
+  _i_f addr > 56 & addr < 63 _t_h_e_n undef(305) _e_l_s_e stm1;
+
+  _p_r_o_c stm1;
+  _i_f addr > max addr _t_h_e_n undef(26322) _e_l_s_e
+  _b_g_n _i_n_t region;
+    _i_f in monitor _t_h_e_n _g_o_t_o skip adm;
+    _i_f prot _t_h_e_n
+    _b_g_n
+      _i_f dgp[addr % 512] _> 0 _t_h_e_n
+      _b_g_n
+	_i_f ~ (addr < 16 ! addr = 63) _t_h_e_n undef(27500)
+      _e_n_d
+    _e_n_d;
+    _i_f nowrite[addr] _t_h_e_n
+    _b_g_n _r_e_a_l m1, addr1, cg1;
+      m1:= m; addr1:= addr; cg1:= cg; undef(5);
+      m:= m1; addr:= addr1; cg:= cg1
+    _e_n_d nowrite;
+    m cnt:= m cnt + 1;
+  skip adm:
+    filled[addr]:= cg = 0;
+    region:= addr % bufs; x:= addr - region * bufs;
+  rep:
+    _i_f region =  0  _t_h_e_n m0[x]:= m _e_l_s_e
+    _i_f region = m1p _t_h_e_n _b_g_n m1[x]:= m; m1l:= m cnt _e_n_d _e_l_s_e
+    _i_f region = m2p _t_h_e_n _b_g_n m2[x]:= m; m2l:= m cnt _e_n_d _e_l_s_e
+    _i_f region = m3p _t_h_e_n _b_g_n m3[x]:= m; m3l:= m cnt _e_n_d _e_l_s_e
+    _b_g_n bring in(region); _g_o_t_o rep _e_n_d;
+    _i_f trace _t_h_e_n report writing(addr, m)
+  _e_n_d stm 1;
+
+  _p_r_o_c mem;
+  _i_f addr > 56 & addr < 63 _t_h_e_n undef(304) _e_l_s_e mem1;
+
+  _p_r_o_c mem1;
+  _i_f addr > max addr _t_h_e_n undef(26323) _e_l_s_e
+  _b_g_n _i_n_t region; _b_o_o_l fa;
+    _i_f in monitor _t_h_e_n _g_o_t_o skip adm1;
+    _i_f prot _t_h_e_n
+    _b_g_n
+      _i_f dgp[addr % 512]  >   0 _t_h_e_n
+      _b_g_n
+	_i_f ~ (addr < 16 ! addr = 63) _t_h_e_n undef(27501)
+      _e_n_d
+    _e_n_d;
+    ccs:= ccs + 2; m cnt:= mcnt + 1;
+    fa:= filled[addr];
+    _i_f cg < 2  &  ~fa _t_h_e_n undef(25400);
+  skip adm1:
+    region:= addr % bufs; x:= addr - region * bufs;
+  rep:
+    _i_f region =  0  _t_h_e_n m:= m0[x] _e_l_s_e
+    _i_f region = m1p _t_h_e_n _b_g_n m:= m1[x]; m1l:= m cnt _e_n_d _e_l_s_e
+    _i_f region = m2p _t_h_e_n _b_g_n m:= m2[x]; m2l:= m cnt _e_n_d _e_l_s_e
+    _i_f region = m3p _t_h_e_n _b_g_n m:= m3[x]; m3l:= m cnt _e_n_d _e_l_s_e
+    _b_g_n bring in (region); _g_o_t_o rep _e_n_d;
+    _i_f trace _t_h_e_n report reading(addr, m);
+    _i_f in monitor _t_h_e_n _g_o_t_o skip adm2;
+    _i_f cg = 0 _t_h_e_n _e_l_s_e
+    _i_f cg = 1 _t_h_e_n last par word:= m _e_l_s_e
+    _b_g_n
+      last par word:= _i_f fa _t_h_e_n m _e_l_s_e -m;
+      _i_f cg = 3 _t_h_e_n c:= _i_f fa _t_h_e_n 0 _e_l_s_e 1
+    _e_n_d;
+  skip adm2:
+  _e_n_d mem1;
+
+  _p_r_o_c init memory;
+  _b_g_n
+    y:= max addr % tp9;
+    _f_o_r x:= 0 _s_t_e_p 1 _u_n_t_i_l  y  _d_o dgp[x]:= 2;
+    _c_o  dp:= `true`, gp:= `true`;
+    m cnt:= m1p:= m1l:= m2p:= m2l:= m3p:= m3l:= drum cnt:= 0;
+    x:= 0;
+  rep:
+    filled[x]:= nowrite[x]:= noexec[x]:= _f_a_l_s_e;
+    x:= x + 1; _i_f x _< max addr _t_h_e_n _g_o_t_o rep
+  _e_n_d init memory;
+
+  _i_n_t _a_r m0, m1, m2, m3[0:bufs - 1];
+  _b_o_o_l _a_r filled, nowrite, noexec[0 : max addr];
+  _r_e_a_l m1p, m1l, m2p, m2l, m3p, m3l;
+  _i_n_t _a_r dgp[0 : max addr % 512];
+  _r_e_a_l m cnt, drum cnt;
+
+_c_o end memory simulation;
+
+_c_o simulatie charon;
+
+  _r_e_a_l charon teller, ie0, ie1;
+  _i_n_t af0, af1, if0, if1, lvif0, lvif1;
+  _i_n_t afv0, afv1, ifv0, ifv1, lvifv0, lvifv1;
+  _i_n_t ip lezer;
+
+  _p_r_o_c setq(l, q0, q1, v); _v_a_l l; _i_n_t l, q0, q1, v;
+  _i_f l > 31 _t_h_e_n q0:= set(v, l  - 14, l  - 14, q0) _e_l_s_e
+  _i_f l > 17 _t_h_e_n q1:= set(v, 43 -  l, 43 -  l, q1) _e_l_s_e
+		     q0:= set(v, 17 -  l, 17 -  l, q0);
+
+  _i_n_t _p_r_o_c readq(l, q0, q1); _v_a_l l; _i_n_t l, q0, q1;
+  readq:=
+    _i_f l > 31 _t_h_e_n bit(l - 14, q0) _e_l_s_e
+    _i_f l > 17 _t_h_e_n bit(43 - l, q1) _e_l_s_e bit(17 - l, q0);
+
+  _p_r_o_c init q(q0, q1, qlist); _i_n_t q0, q1; _s_t_r_i_n_g qlist;
+  _b_g_n _i_n_t i;
+    q0:= q1:= 0;
+    _f_o_r i:= 0 _s_t_e_p 1 _u_n_t_i_l 39 _d_o
+    set q(i, q0, q1, stringsymbol(i, qlist))
+  _e_n_d init q;
+
+  _p_r_o_c wek charon; ;
+
+  _p_r_o_c attendeer charon af(n); undef(600 + n);
+
+  _p_r_o_c init charon;
+  _b_g_n
+    charon teller:= 0;
+    ip lezer:= 5;
+    init q(afv0, afv1,
+      {0000000000000000000000000000000000000000});
+    init q(ifv0, ifv1,
+      {1111111111111111111111001111110000111111});
+    init q(lvifv0, lvifv1,
+      {1111111111111100111111001111110000001111});
+    ls
+  _e_n_d init charon;
+
+  _p_r_o_c bva; _g_o_t_o bva1;
+
+  _p_r_o_c ls;
+  _b_g_n
+    iv:= bt:= 1;
+    ov:= ie0:= ie1:= dyst stat:= 0;
+    af0:= af1:= if0:= if1:= 0;
+    lvif0:= tp26m1; lvif1:= tp26m1 - tp12 + 1;
+  _e_n_d ls;
+
+  _p_r_o_c_e_d_u_r_e lsip;
+  _b_e_g_i_n ls; ip; ot:= tp18m1;
+    setq(ip lezer, if0,if1,1);
+    _i_f ~ sva _t_h_e_n bva
+  _e_n_d lsip;
+
+  _p_r_o_c_e_d_u_r_e lsbi;
+  _b_e_g_i_n ls; bi; ot:= tp18m1;
+    setq(ip lezer, if0,if1,1);
+    _i_f ~ sva _t_h_e_n bva
+  _e_n_d lsbi;
+
+  _p_r_o_c_e_d_u_r_e lsnb;
+  _b_e_g_i_n ls; ot:= tp18m1;
+    setq(38,if0,if1,1);
+    _i_f ~ sva _t_h_e_n bva
+  _e_n_d lsnb;
+
+  _p_r_o_c ip;
+  _b_e_g_i_n _r_e_a_l n, amount;
+
+    _r_e_a_l _p_r_o_c word;
+    _b_e_g_i_n _i_n_t n;
+
+      _r_e_a_l _p_r_o_c rehep1;
+      _b_g_n _r_e_a_l n;
+	n:= rehep1:= rehep;
+	_i_f n > 127 _t_h_e_n undef(160)
+      _e_n_d rehep1;
+
+    skip:
+      n:= -(64 - rehep1);   _i_f n < 0 _t_h_e_n _g_o_t_o skip;
+      word:= ((n * 128 + rehep1) * 128 + rehep1) * 128 + rehep1
+    _e_n_d word;
+
+  block:
+    n:= word;
+    amount:= n % tp18;
+    addr:= n - amount * tp18;   _i_f addr = tp18m1 _t_h_e_n addr:= -1;
+    _i_f amount # 0  !  addr # 0 _t_h_e_n
+    _b_e_g_i_n
+    loop:
+      addr:= addr + 1;   amount:= amount - 1;
+      m:= word; _i_f m > tp26m1 _t_h_e_n m:= m - tp27m1; stm;
+      _g_o_t_o _i_f amount = 0  !  amount = -512 _t_h_e_n block _e_l_s_e loop
+    _e_n_d block
+
+  _e_n_d ip;
+
+  _p_r_o_c bi;
+  _b_g_n _r_e_a_l a, s; _i_n_t adr, cnt;
+
+    _p_r_o_c rehep inf;
+    _b_g_n
+    rep: s:= rehep;
+      _i_f s > 63 _t_h_e_n
+      _b_g_n _i_f s # 127 _t_h_e_n undef(172);
+	_f_o_r s:= rehep _w_h_i_l_e s # 127 _d_o;
+	_g_o_t_o rep
+      _e_n_d
+    _e_n_d rehep inf;
+
+    _p_r_o_c re biword;
+    _b_g_n _i_n_t n; _r_e_a_l res; _b_o_o_l par;
+      res:= s; par:= parlist[s] = 0;
+      _f_o_r n:= 1 _s_t_e_p 1 _u_n_t_i_l 4 _d_o
+      _b_g_n
+	rehep inf; res:= res * 64 + s; par:= par _= parlist[s] = 0
+      _e_n_d;
+      _i_f par _t_h_e_n undef(173);
+      a:= res _d_i_v tp27; s:= -(a * tp27 - x);
+      _i_f s > tp26m1 _t_h_e_n s:= s - tp27m1
+    _e_n_d re biword;
+
+  read biblock:
+    rehep inf; _i_f s = 0 _t_h_e_n _g_o_t_o read biblock;
+    re biword; _i_f a # 3 _t_h_e_n undef(174);
+    adr:= and(s, tp18m1); cnt:= and(s _d_i_v tp18, 511);
+    _i_f cnt = 0 _t_h_e_n cnt:= 512;
+    _i_f adr > 0 ! cnt > 0 _t_h_e_n
+    _b_g_n
+      _f_o_r cnt:= cnt _s_t_e_p -1 _u_n_t_i_l 1 _d_o
+      _b_g_n rehep inf; re biword;
+	_i_f a # 0 _t_h_e_n undef(175);
+	adr:= adr + 1;
+	_i_f adr < 24 ! adr > 56 & adr < 63 _t_h_e_n undef(176);
+	addr:= adr; m:= s; stm1;
+      _e_n_d cnt;
+      _g_o_t_o read biblock
+    _e_n_d biblock;
+  _e_n_d bi;
+
+_c_o einde simulatie charon;
+
+_c_o begin monitor procedures;
+
+_c_o ad hoc master- en trace-procedures, voor testdoeleinden;
+  _p_r_o_c master;
+  _b_g_n
+    nlcr; printtext({simulatie beeindigd met foutnummer});
+    absfixt(3, 0, error number);
+    _i_f ingreep type = 1 _t_h_e_n printtext({in charon/sleutelingreep});
+    _i_f ingreep type = 2 _t_h_e_n printtext({in foutingreep});
+    _i_f ingreep type = 3 _t_h_e_n
+      printtext({in foutingreep tijdens charon/sleutelingreep});
+    print regs;
+    print tlist;
+    print dgp;
+    print charon;
+    dump(0, max addr);
+    exit
+  _e_n_d master;
+
+  _p_r_o_c start monitor;
+  _b_g_n sva:= _t_r_u_e; lsip; sva:= _f_a_l_s_e;
+    cg:= 0; addr:= 512; m:= 0; stm;
+    bva
+  _e_n_d start monitor;
+
+  _p_r_o_c terminate;
+  _b_g_n printtext({terminate}); master _e_n_d;
+
+  _p_r_o_c report reading(addr, val); _v_a_l addr, val; _i_n_t addr, val;
+  _b_g_n nlcr; printtext({read    });
+    proct(addr, 9);
+    proct(val, 9)
+  _e_n_d;
+
+  _p_r_o_c report writing(addr, val); _v_a_l addr, val; _i_n_t addr, val;
+  _b_g_n nlcr; printtext({write   });
+    proct(addr, 9);
+    proct(val, 9)
+  _e_n_d;
+
+  _p_r_o_c report eoi;
+  _b_g_n nlcr; printtext({e o inst}) _e_n_d;
+
+  _p_r_o_c report eod(addr, instr); _v_a_l addr, instr;
+    _i_n_t addr, instr;
+  _b_g_n nlcr; printtext({e o do  });
+    proct(addr, 9);
+    proct(instr, 9)
+  _e_n_d;
+
+  _p_r_o_c report interrupt(ir addr); _v_a_l ir addr; _i_n_t ir addr;
+  _b_g_n nlcr; printtext({interr  });
+    proct(ir addr, 9)
+  _e_n_d;
+
+  _p_r_o_c report skip;
+  _b_g_n nlcr; printtext({skip    }) _e_n_d;
+
+_c_o einde ad hoc master- en trace-procedures;
+
+  _i_n_t ir addr, error number;
+  _b_o_o_l sva, in monitor, trace, key;
+  _r_e_a_l ccs, ccs1, ccs of, ccsmax, dcs, dcs max;
+  _r_e_a_l jcnt, tcnt;
+  _r_e_a_l _a_r tlist[0 : 31];
+
+  _p_r_o_c init monitor;
+  _b_g_n
+    ir addr:= 0; ccs:= ccs1:= ccs of:= dcs:= 0; error number:= 999;
+    jcnt:= tcnt:= 0;
+    ccsmax:= 1000000; dcsmax:= 100;
+    trace:= sva:= key:= _f_a_l_s_e; in monitor:= _t_r_u_e;
+    start monitor
+  _e_n_d init monitor;
+
+  _i_n_t _p_r_o_c undef(ern);   _v_a_l ern;   _i_n_t ern;
+  _b_g_n undef:= 1;
+    ir addr:= ern % 1000; error number:= ern - ir addr * 1000;
+    _i_f in monitor _t_h_e_n terminate _e_l_s_e
+    _i_f filled[ir addr] _~ (ir addr= 0 ! ov=0) _t_h_e_n
+    _b_g_n in monitor:= _t_r_u_e;
+      cg:= 0; master;
+      in monitor:= _f_a_l_s_e
+    _e_n_d _e_l_s_e
+    _b_e_g_i_n
+      ingreep type:= ingreep type + 2;
+      ov:= 0; _g_o_t_o ingreep
+    _e_n_d
+  _e_n_d undef;
+
+  _p_r_o_c_e_d_u_r_e proct(m,dig); _v_a_l m,dig; _i_n_t m, dig;
+  _b_e_g_i_n _r_e_a_l n, x;
+    space(1);
+    _i_f dig = 6 _t_h_e_n x:= m / tp15 _e_l_s_e
+    _b_g_n
+      x:= (_i_f 1/m < 0 _t_h_e_n m + tp27m1 _e_l_s_e m) / tp24;
+      dig:= 9
+    _e_n_d;
+  rep:
+    n:= entier(x); prsym(n);
+    _i_f dig= 7 _t_h_e_n space(1);
+    dig:= dig - 1;
+    _i_f dig= 0 _t_h_e_n _g_o_t_o out;
+    x:= (x-n) * 8;
+    _g_o_t_o rep;
+  out:
+    space(1)
+  _e_n_d proct;
+
+  _i_n_t _p_r_o_c reoct;
+  _b_g_n _i_n_t n;
+  skip:
+    n:= resym; _i_f n < 10 _t_h_e_n undef(151);
+    _i_f n # 120 _t_h_e_n _g_o_t_o skip;
+    x:= 0;
+  rep:
+    n:= resym;
+    _i_f n = 93 _t_h_e_n n:= resym;
+    _i_f n < 8 _t_h_e_n
+    _b_g_n x:= x * 8 + n; _g_o_t_o rep _e_n_d;
+    _i_f n # 120 _t_h_e_n undef(152);
+    _i_f x > tp27m1 _t_h_e_n undef(153);
+    _i_f x > tp26m1 _t_h_e_n x:= x - tp27m1;
+    reoct:= x
+  _e_n_d reoct;
+
+  _i_n_t _p_r_o_c oct(x); _v_a_l x; _r_e_a_l x;
+  _b_g_n _i_n_t i, sgn, n; _r_e_a_l res;
+    _i_f 1/x < 0 _t_h_e_n _b_g_n sgn:= -1; x:= -x _e_n_d _e_l_s_e sgn:= 1;
+    x:= (x + .05)/\9; res:= 0;
+    _f_o_r i:= 1 _s_t_e_p 1 _u_n_t_i_l 9 _d_o
+    _b_g_n x:= x * 10; n:= entier(x); x:= x - n; res:= res * 8 + n
+    _e_n_d;
+    oct:= (_i_f res > tp26m1 _t_h_e_n res - tp27m1 _e_l_s_e res) * sgn
+  _e_n_d oct;
+
+  _p_r_o_c tn(s, x); _v_a_l x; _r_e_a_l x; _s_t_r_i_n_g s;
+  _b_g_n _i_n_t i, n;
+    i:= 0;
+    _f_o_r n:= stringsymbol(i, s) _w_h_i_l_e n # 255,
+	      93 _w_h_i_l_e i < 7 _d_o
+    _b_g_n i:= i + 1; prsym(n) _e_n_d;
+    proct(x, 9); space(5)
+  _e_n_d tn;
+
+  _p_r_o_c_e_d_u_r_e dump(from, to); _v_a_l from, to; _i_n_t_e_g_e_r from, to;
+  _b_e_g_i_n _r_e_a_l i, j, x;
+    _i_f from < 0 ! to > max addr _t_h_e_n undef(161);
+    _i_f line number # 1 ! print pos # 0 _t_h_e_n new page;
+    printtext({geheugendump van}); proct(from, 6);
+    printtext({tot}); proct(to,6); nlcr;
+    addr:= from; _g_o_t_o heading;
+  rep:
+    addr:= addr + 1;
+  repa:
+    _i_f addr > to _t_h_e_n _g_o_t_o out;
+    _i_f ~ filled[addr] _t_h_e_n _g_o_t_o rep;
+    printtext({loc}); addr:= addr % 8 * 8;
+    proct(addr,6); prsym(65); proct(addr + 7,6);
+    i:= 0;
+  repi:
+    j:= 0; space(8);
+  repj:
+    _i_f filled[addr] _t_h_e_n
+    _b_g_n mem1; proct(m, 9) _e_n_d _e_l_s_e space(12);
+    addr:= addr + 1;
+    _i_f addr > to _t_h_e_n _g_o_t_o out;
+    j:= j + 1;
+    _i_f j < 4 _t_h_e_n _g_o_t_o repj;
+    i:= i + 1;
+    _i_f i < 2 _t_h_e_n _g_o_t_o repi;
+    nlcr;
+    _i_f line number = 1 _t_h_e_n
+  heading:
+    _b_e_g_i_n space(25);
+      _f_o_r i:= 0 _s_t_e_p 1 _u_n_t_i_l 7 _d_o
+      _b_e_g_i_n _i_f i = 4 _t_h_e_n space(8);
+	printtext({      .....}); prsym(i)
+      _e_n_d;
+      nlcr; nlcr;
+    _e_n_d;
+    _g_o_t_o repa;
+  out:
+    nlcr;
+    _f_o_r i:= 1 _s_t_e_p 1 _u_n_t_i_l 144 _d_o prsym(66);
+    nlcr
+  _e_n_d dump;
+
+  _p_r_o_c print tlist;
+  _b_g_n _i_n_t max,tcnt1, num, x;
+    nlcr; printtext({vorige sprongadressen}); nlcr;
+    max:= _i_f jcnt > 32 _t_h_e_n 32 _e_l_s_e jcnt; tcnt1:= tcnt;
+    _f_o_r num:= 1 _s_t_e_p 1 _u_n_t_i_l max _d_o
+    _b_g_n
+      space(2); fixt(2, 0, -num);
+      x:= tlist[tcnt1];
+      _i_f 1/x < 0 _t_h_e_n proct(and(x, tp26m1), 9) _e_l_s_e
+      _b_g_n space(4); proct(x, 6) _e_n_d;
+      tcnt1:= tcnt1 - 1;
+      _i_f tcnt1 = -1 _t_h_e_n tcnt1:= 31
+    _e_n_d;
+    nlcr
+  _e_n_d print tlist;
+
+  _p_r_o_c print dgp;
+  _b_g_n _i_n_t i, j;
+    nlcr; printtext({protectiebits});
+    _f_o_r i:= 0 _s_t_e_p 1 _u_n_t_i_l aantal kasten - 1 _d_o
+    _b_g_n nlcr; printtext({kast}); absfixt(2, 0, i);
+      printtext({   dp });
+      _f_o_r j:= 0 _s_t_e_p 1 _u_n_t_i_l 3 _d_o
+      prsym((even(dgp[32 * i + 8 * j]) + 1) / 2);
+      printtext({    gp });
+      _f_o_r j:= 0 _s_t_e_p 1 _u_n_t_i_l 31 _d_o
+      prsym((dgp[32 * i + j] + 1) % 2)
+    _e_n_d;
+    nlcr
+  _e_n_d print dgp;
+
+  _c_o  dp  0 1 0 1
+	gp  0 0 1 1
+       dgp -1 0 1 2;
+
+  _p_r_o_c print regs;
+  _b_g_n nlcr; printtext({registers}); nlcr;
+    tn({tlink},  tlink  ); tn({fh},     fh     ); tn({ft},     ft    );
+    tn({a},      a      ); tn({s},      s      ); tn({b},      b     );
+    tn({or},     or     ); tn({addr},   addr   ); tn({m},      m     );
+    tn({ir addr},ir addr);
+    nlcr; printtext({jcnt (dec)}); absfixt(10, 0, jcnt);
+    space(10); printtext({ccs  (dec)}); absfixt(10, 0, ccs );
+    printtext({+}); absfixt(6, 0, ccs of);
+    space(10); printtext({drum cnt (dec)}); absfixt(10, 0, drum cnt);
+    nlcr
+  _e_n_d print regs;
+
+  _p_r_o_c print charon;
+  _b_g_n _i_n_t i;
+    nlcr; nlcr; printtext({charon}); nlcr;
+    printtext({apparaat    af    if  lvif});
+    _f_o_r i:= 0 _s_t_e_p 1 _u_n_t_i_l 39 _d_o
+    _i_f read q(i, ifv0, ifv1) + read q(i, lvifv0, lvifv1) = 2 _t_h_e_n
+    _b_g_n
+      nlcr; absfixt(7, 0, i);
+      absfixt(4, 0, readq(i,   af0,   af1));
+      absfixt(4, 0, readq(i,   if0,   if1));
+      absfixt(4, 0, readq(i, lvif0, lvif1))
+    _e_n_d;
+    nlcr;
+    _f_o_r i:= 1 _s_t_e_p 1 _u_n_t_i_l 26 _d_o prsym(66);
+    nlcr
+  _e_n_d print charon;
+
+_c_o einde monitor procedures;
+
+_c_o_m_m_e_n_t herkennen van instructies;
+
+  _r_e_a_l x, y, z, u, v, w, tp26, tp27, tp27m1;
+  _r_e_a_l i,l,n;
+  _r_e_a_l _a_r_r_a_y tp[0:27];
+
+  _i_n_t tp1, tp2, tp3, tp4, tp5, tp6, tp7, tp8, tp9, tp10,
+	tp11, tp12, tp13, tp14, tp15, tp16, tp17, tp18, tp19, tp20,
+	tp21, tp22, tp23, tp24, tp25;
+  _i_n_t tp14m1, tp18m3, tp18m1, tp26m1;
+
+  _c_o_m_m_e_n_t hulp-velden uit or: ;
+  _r_e_a_l b14t0,b16c15,b18c17,b20c19,b20,
+	 b14t12, b11t0, b11t5, b11t9, b8t6, b5t0,
+	 b4t0,b24,b21,b14t9,b8t0;
+
+  _c_o_m_m_e_n_t switches voor het herkennen van instructies: ;
+
+  _s_w_i_t_c_h sb26t22:=
+    aplus,
+    aeq,
+    _i_f b20c19 = 1 _t_h_e_n aplusdyn _e_l_s_e plusa,
+    _i_f b20c19 = 1 _t_h_e_n aeqdyn _e_l_s_e
+      _i_f b16c15 = 1 _t_h_e_n aplusa _e_l_s_e eqa,
+    splus,
+    seq,
+    _i_f b20c19 = 1 _t_h_e_n splusdyn _e_l_s_e pluss,
+    _i_f b20c19 = 1 _t_h_e_n seqdyn _e_l_s_e
+      _i_f b16c15 = 1 _t_h_e_n spluss _e_l_s_e eqs,
+    mulas,
+    muls,
+    axor,
+    aand,
+    divas,
+    diva,
+    sxor,
+    sand,
+    bplus,
+    beq,
+    _i_f b20c19 = 1 _t_h_e_n bplusdyn _e_l_s_e plusb,
+    _i_f b20c19 = 1 _t_h_e_n beqdyn _e_l_s_e
+      _i_f b16c15 = 1 _t_h_e_n bplusb _e_l_s_e eqb,
+    _i_f b18c17 > 1 _t_h_e_n dsw[undef(202)] _e_l_s_e jump,
+    _i_f b18c17 > 1 _t_h_e_n dsw[undef(204)] _e_l_s_e
+    _i_f b21 = 0 _t_h_e_n goto _e_l_s_e
+      _i_f b20c19 = 3 _t_h_e_n gotodyn _e_l_s_e dsw[undef(203)],
+    repn,
+    _i_f b18c17 = 0 _t_h_e_n subn _e_l_s_e
+    _i_f b18c17 = 2 _t_h_e_n subn _e_l_s_e
+    _i_f b21 = 0 _t_h_e_n subc _e_l_s_e
+      _i_f b20c19 = 1 _t_h_e_n subcdyn _e_l_s_e do,
+    _i_f b16c15 = 1 _t_h_e_n
+     (_i_f b20c19 = 1 _t_h_e_n dsw[undef(228)] _e_l_s_e gplus)
+      _e_l_s_e fplus,
+    _i_f b16c15 = 1 _t_h_e_n
+     (_i_f b20c19 = 1 _t_h_e_n dsw[undef(229)] _e_l_s_e geq  )
+      _e_l_s_e feq,
+    _i_f b21 = 0 _t_h_e_n
+     (_i_f b20c19 = 1 ! b20c19 = 3 ! b18c17 # 0 _t_h_e_n
+	dsw[undef(232)] _e_l_s_e operate)
+      _e_l_s_e dsw[undef(200)],
+    tabel6,
+    _i_f b16c15 = 1 _t_h_e_n
+     (_i_f b20c19 = 1 _t_h_e_n dsw[undef(230)] _e_l_s_e gtd  )
+      _e_l_s_e ftd,
+    _i_f b16c15 = 1 _t_h_e_n
+     (_i_f b20c19 = 1 _t_h_e_n dsw[undef(231)] _e_l_s_e eqg  )
+      _e_l_s_e _i_f b20c19 = 1 _t_h_e_n feqdyn _e_l_s_e eqf,
+    dsw[undef(201)],
+    tabel7;
+
+  _s_w_i_t_c_h sb24c21c6c5:=
+    lca, lua, lcas, luas,
+    rca, rua, rcas, ruas,
+    lcs, lus, lcsa, lusa,
+    rcs, rus, rcsa, rusa;
+
+_c_o_m_m_e_n_t hulp-procedures: ;
+
+  _p_r_o_c itp(x); _r_e_a_l x;
+  _b_g_n x:= tp[i]; i:= i + 1 _e_n_d itp;
+
+_c_o_m_m_e_n_t initialisatie: ;
+
+  tp[0]:= 1;
+  _f_o_r i:= 1 _s_t_e_p 1 _u_n_t_i_l 27 _d_o tp[i]:= tp[i - 1] * 2;
+  i:= 1;
+  itp(tp1);  itp(tp2);  itp(tp3);  itp(tp4);  itp(tp5);  itp(tp6);
+  itp(tp7);  itp(tp8);  itp(tp9);  itp(tp10); itp(tp11); itp(tp12);
+  itp(tp13); itp(tp14); itp(tp15); itp(tp16); itp(tp17); itp(tp18);
+  itp(tp19); itp(tp20); itp(tp21); itp(tp22); itp(tp23); itp(tp24);
+  itp(tp25); itp(tp26); itp(tp27);
+  tp14m1:= tp14 - 1; tp18m3:= tp18 - 3;
+  tp18m1:= tp18 - 1; tp26m1:= tp26 - 1; tp27m1:= tp27 - 1;
+
+  set random(date/622598 + time/7200);
+  init parlist;
+  init x8;
+  init memory;
+  init charon;
+  init monitor;
+
+bva1:
+  in monitor:= _f_a_l_s_e;
+
+basis cyclus 1:
+  _i_f ot > tp18m3 _t_h_e_n
+  _b_g_n _c_o dynamische stop;
+    _i_f dyst stat < 2 _t_h_e_n
+    _b_g_n dyst stat:= dyst stat + 1; _g_o_t_o skip _e_n_d _e_l_s_e
+    _i_f charon teller > 0 _t_h_e_n
+    _b_g_n
+      ccs:= ccs + charon teller; dyst stat:= 0; _g_o_t_o skip
+    _e_n_d _e_l_s_e undef(1)
+  _e_n_d _e_l_s_e dyst stat:= 0;
+
+  cg:= 0; addr:= ot; mem; or:= m;
+  _i_f noexec[ot] _t_h_e_n undef(4); ot:= ot + 1;
+  _i_f ot > max addr _t_h_e_n undef(26358);
+
+basis cyclus 2:
+  _i_f ccs _> ccsmax _t_h_e_n undef(2);
+  flag:=  _f_a_l_s_e;
+  y:= _i_f 1/or < 0 _t_h_e_n or + tp27m1 _e_l_s_e or;
+  x:= y % tp15; b14t0 := y - x * tp15; y:= x;
+  x:= y % tp2;  b16c15:= y - x * tp2;  y:= x;
+  x:= y % tp2;  b18c17:= y - x * tp2;  y:= x;
+  x:= y % tp2;  b20c19:= y - x * tp2;  y:= x;
+  x:= y % tp1;  b21   := y - x * tp1;
+  _g_o_t_o sb26t22[x + 1];
+
+tabel6:
+  b24:= 0; _g_o_t_o tabel;
+tabel7:
+  b24:= 1;
+tabel:
+  b20:= b20c19 % 2;
+  _i_f b20 + b20 # b20c19 _t_h_e_n
+  _b_g_n
+    _i_f bitstring(26, 17, or) = 1004 & b14t0 = 31488 _t_h_e_n
+    _g_o_t_o memprot;
+    undef(206)
+  _e_n_d b19 = 1;
+  b14t12:= b14t0 % tp12; b11t0:= b14t0 - b14t12 * tp12;
+  _i_f b14t12 = 0 _t_h_e_n
+  _b_g_n _c_o shift, nora, nors, noras, rgt, ten;
+    b11t5:= b11t0 % tp5;  b4t0:= b11t0 - b11t5 * tp5;
+    _i_f b11t5 < 4 _t_h_e_n _g_o_t_o shift _e_l_s_e
+    _i_f b11t5 = 5 _t_h_e_n
+    _b_g_n
+      _i_f b21 + b20 + b4t0 = 0 _t_h_e_n
+      _g_o_t_o _i_f b24 = 0 _t_h_e_n nora _e_l_s_e nors
+    _e_n_d _e_l_s_e
+    _i_f b11t5 = 7 _t_h_e_n
+    _b_g_n
+      _i_f b24 + b21 + b20 + b4t0 = 0 _t_h_e_n _g_o_t_o noras
+    _e_n_d _e_l_s_e
+    _i_f b11t5 > 7 & b11t5 < 11 _t_h_e_n
+    _b_g_n
+      _i_f b24 + b20 = 0 & b4t0 < 3 _t_h_e_n _g_o_t_o rgt
+    _e_n_d _e_l_s_e
+    _i_f b11t5 = 32 _t_h_e_n
+    _b_g_n
+      _i_f b24 = 1 & b21 + b20 = 0 & b4t0 < 2 _t_h_e_n _g_o_t_o ten
+    _e_n_d
+  _e_n_d _e_l_s_e
+  _i_f b14t12 = 6 _t_h_e_n
+  _b_g_n _c_o clp, int, maak iv, maak ov, itvon;
+    b11t9:= b11t0 % tp9; b8t0:= b11t0 - b11t9 * tp9;
+    _i_f b21 + b20 + b18c17 + b8t0 = 0 _t_h_e_n
+    _b_g_n
+      _i_f b11t9 = 0 _t_h_e_n _g_o_t_o maak iv;
+      _i_f b11t9 = 1 _t_h_e_n _g_o_t_o maak ov;
+      _i_f b11t9 = 2 & b24 = 1 _t_h_e_n _g_o_t_o itvon;
+      _i_f b11t9 = 3 & b24 = 0 _t_h_e_n _g_o_t_o clp;
+      _i_f b11t9 = 4 & b24 = 0 _t_h_e_n _g_o_t_o int
+    _e_n_d
+  _e_n_d _e_l_s_e
+  _i_f b14t12 = 7 _t_h_e_n
+  _b_g_n _c_o maak q, lees q;
+    b11t9:= b11t0 % tp9; b8t0:= b11t0 - b11t9 * tp9;
+    b 8t6:= b 8t0 % tp6; b5t0:= b 8t0 - b 8t6 * tp6;
+    _i_f b11t9 < 4 _t_h_e_n
+    _b_g_n
+      _i_f b21 + b18c17 + b8t6 = 0 _t_h_e_n _g_o_t_o maak q
+    _e_n_d _e_l_s_e
+    _i_f b21 = 0 & b8t6 < 2 & b5t0 < 2 _t_h_e_n _g_o_t_o lees q
+  _e_n_d tabel;
+  undef(205);
+
+aplusdyn:   b20c19:= 4;   _g_o_t_o aplus;
+aeqdyn:     b20c19:= 4;   _g_o_t_o aeq;
+splusdyn:   b20c19:= 4;   _g_o_t_o splus;
+seqdyn:     b20c19:= 4;   _g_o_t_o seq;
+bplusdyn:   b20c19:= 4;   _g_o_t_o bplus;
+beqdyn:     b20c19:= 4;   _g_o_t_o beq;
+gotodyn:
+  b20c19:= 4; b21:= 0; _c_o abnormale betekenis van b21; _g_o_t_o goto;
+subcdyn:    b20c19:= 4;   _g_o_t_o subc;
+feqdyn:     b20c19:= 4;   _g_o_t_o feq;
+
+
+aeq:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n val:= -val;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n a:= val;
+  _g_o_t_o time0;
+
+seq:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n val:= -val;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n s:= val;
+  _g_o_t_o time0;
+
+beq:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n val:= -val;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n b:= val;
+  _g_o_t_o time0;
+
+aplus:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= _i_f b21 = 0 _t_h_e_n a + val _e_l_s_e a - val;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n a:= val;
+  _g_o_t_o time0;
+
+splus:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= _i_f b21 = 0 _t_h_e_n s + val _e_l_s_e s - val;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n s:= val;
+  _g_o_t_o time0;
+
+bplus:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= itv + 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= _i_f b21 = 0 _t_h_e_n b + val _e_l_s_e b - val;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n b:= val;
+  _g_o_t_o time0;
+
+eqa:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(306);
+  val:= _i_f b21 = 0 _t_h_e_n a _e_l_s_e -a;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  m:= val; cg:= itv; stm1;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time2;
+
+eqs:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(307);
+  val:= _i_f b21 = 0 _t_h_e_n s _e_l_s_e -s;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  m:= val; cg:= itv; stm1;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time2;
+
+eqb:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(308);
+  val:= _i_f b21 = 0 _t_h_e_n b _e_l_s_e -b;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  m:= val; cg:= itv; stm1;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time2;
+
+aplusa:
+  flag:= _t_r_u_e;
+plusa:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(309);
+  cg:= 1; mem1; val:= m;
+  val:= _i_f b21 = 0 _t_h_e_n val + a _e_l_s_e val - a;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f flag ! b16c15 # 1 _t_h_e_n
+  _b_g_n m:= val; cg:= itv; stm1 _e_n_d;
+  _i_f flag _t_h_e_n a:= m;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time3;
+
+spluss:
+  flag:= _t_r_u_e;
+pluss:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(310);
+  cg:= 1; mem1; val:= m;
+  val:= _i_f b21 = 0 _t_h_e_n val + s _e_l_s_e val - s;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f flag ! b16c15 # 1 _t_h_e_n
+  _b_g_n m:= val; cg:= itv; stm1 _e_n_d;
+  _i_f flag _t_h_e_n s:= m;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time3;
+
+bplusb:
+  flag:= _t_r_u_e;
+plusb:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f regop _t_h_e_n undef(311);
+  cg:= 1; mem1; val:= m;
+  val:= _i_f b21 = 0 _t_h_e_n val + b _e_l_s_e val - b;
+  _i_f abs(val) > tp26m1 _t_h_e_n
+  _b_g_n of:= 1;
+    val:= _i_f val > 0 _t_h_e_n val - tp27m1 _e_l_s_e val + tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f flag ! b16c15 # 1 _t_h_e_n
+  _b_g_n m:= val; cg:= itv; stm1 _e_n_d;
+  _i_f flag _t_h_e_n b:= m;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time3;
+
+axor:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= xor(a, _i_f b21 = 0 _t_h_e_n val _e_l_s_e -val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n a:= val;
+  _g_o_t_o time0;
+
+sxor:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= xor(s, _i_f b21 = 0 _t_h_e_n val _e_l_s_e -val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n s:= val;
+  _g_o_t_o time0;
+
+aand:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= and(a, _i_f b21 = 0 _t_h_e_n val _e_l_s_e -val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n a:= val;
+  _g_o_t_o time0;
+
+sand:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  val:= and(s, _i_f b21 = 0 _t_h_e_n val _e_l_s_e -val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n s:= val;
+  _g_o_t_o time0;
+
+muls:
+  _i_f b16c15 = 1 _t_h_e_n undef(223);
+  flag:= _t_r_u_e;
+mulas:
+  _i_f b16c15 = 1 _t_h_e_n undef(222);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n val:= - val;
+  hulp1:= val; _c_o voor ccs-metingen;
+  _i_f flag _t_h_e_n a:= 0;
+  y:= val*s + a;
+  _i_f y=0 _t_h_e_n a:= s:= y _e_l_s_e
+  _i_f abs(y)<tp26 _t_h_e_n
+  _b_e_g_i_n s:= y; a:= _i_f y>0 _t_h_e_n 0 _e_l_s_e -0 _e_n_d _e_l_s_e
+  _b_e_g_i_n y:= val % tp13;   z:= y * tp13;
+    v:= s % tp13;
+    z:= (s - v*tp13) * z + (val - z) * s + a;
+    w:= z % tp26;
+    s:= z - w*tp26;
+    a:= y * v + w;
+    _i_f s=0 _t_h_e_n s:= sign(a)*0
+  _e_n_d mulas;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+
+  x:= abs(hulp1)/tp26;   y:= 26;
+rep ccs mulas:
+  x:= x + x;   y:= y - 1;   ccs:= ccs + 1;
+  _i_f x_>1 _t_h_e_n x:= x - 1 _e_l_s_e
+  _b_e_g_i_n x:= x + x;   y:= y - 1;
+    _i_f x _> 1 _t_h_e_n x:= x - 1
+  _e_n_d;
+  _i_f x = 0 _t_h_e_n ccs:= ccs + (y+1) % 2 _e_l_s_e _g_o_t_o rep ccs mulas;
+  _g_o_t_o time2;
+
+diva:
+  _i_f b16c15 = 1 _t_h_e_n undef(224);
+  flag:= _t_r_u_e;
+divas:
+  _i_f b16c15 = 1 _t_h_e_n undef(225);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addr op _t_h_e_n val:= addr _e_l_s_e
+  _b_g_n cg:= 1; memreg; val:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n val:= - val;
+  _i_f abs(val) _< abs(a) _t_h_e_n undef(103);
+  _i_f flag _t_h_e_n
+  s:= _i_f a = 0 _t_h_e_n a _e_l_s_e _i_f a > 0 _t_h_e_n 0 _e_l_s_e -0 _e_l_s_e
+  _i_f ~1/a>0 _= 1/s>0 _t_h_e_n undef(102);
+  hulp1:= a;
+  _i_f abs(a)<tp13 _t_h_e_n
+  _b_g_n
+    y:= a * tp26 + s;
+    s:= y % val; a:= y - s * val
+  _e_n_d _e_l_s_e
+  _b_g_n
+    u:= s % tp13; y:= a * tp13 + u; v:= y % val;
+    y:= (y - v * val - u) * tp13 + s; w:= y % val;
+    a:= y - w * val; s:= v * tp13 + w
+  _e_n_d diva, divas;
+  _i_f a=0 _t_h_e_n
+  a:= _i_f hulp1 = 0 _t_h_e_n hulp1 _e_l_s_e
+      _i_f hulp1 > 0 _t_h_e_n 0 _e_l_s_e -0;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  ccs:= ccs + 28;
+  _g_o_t_o time0;
+
+ten:
+  _i_f b16c15 = 1 _t_h_e_n undef(211);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  x:= s * 10; val:= s:= tail of(x);
+  _i_f b4t0 = 0 _t_h_e_n a:= head of(x);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _g_o_t_o time1;
+
+noras:
+  _i_f b16c15 = 1 _t_h_e_n undef(219);
+  flag:= _t_r_u_e;
+shift:
+  _i_f b16c15 = 1 _t_h_e_n undef(218);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f b20 =0 _t_h_e_n l:= b4t0 _e_l_s_e
+  _b_g_n l:= b4t0 + b;
+    _i_f l < 0 ! l > 31 _t_h_e_n undef(140)
+  _e_n_d;
+  _i_f b11t5 > 1 _t_h_e_n
+  _b_g_n _c_o ook voor noras;
+    nega:= 1/a < 0;
+    negs:= 1/s < 0;
+  _e_n_d;
+  _i_f flag _t_h_e_n
+  _b_g_n _c_o noras;
+    b:= _i_f a = 0 _t_h_e_n norm shift
+       (_i_f nega & ~negs _t_h_e_n s - tp26m1 _e_l_s_e
+	_i_f negs & ~nega _t_h_e_n s + tp26m1 _e_l_s_e s, x) + 26 _e_l_s_e
+	norm shift(a, x);
+    l:= n:= b; _g_o_t_o lcas
+  _e_n_d;
+  n:= l;
+  _g_o_t_o sb24c21c6c5[(b24 + b24 + b21) * 4 + b11t5 + 1];
+
+lca:
+  a:= circ shift(a, n);
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+lcs:
+  s:= circ shift(s, n);
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+lcas:
+  _i_f n>26 _t_h_e_n _b_e_g_i_n n:= 53-n; _g_o_t_o rcas2 _e_n_d;
+lcas2:
+  _i_f n#0 _t_h_e_n
+  _b_g_n
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a % hulp3;
+    sh:= s % hulp2;
+    a:= -((ah * hulp3 - a) * hulp1 - sh);
+    s:= -((sh * hulp2 - s) * hulp1 - ah);
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1;
+    _i_f negs _t_h_e_n s:= s - tp26m1;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+lcsa:
+  _i_f n>27 _t_h_e_n _b_g_n n:= 54 - n; _g_o_t_o rcsa2 _e_n_d;
+lcsa2:
+  _i_f n#0 _t_h_e_n
+  _b_g_n
+    _i_f negs _t_h_e_n s:= s + tp27m1;
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s % hulp3;
+    ah:= a % hulp3;
+    s:= -((sh * hulp3 - s) * hulp1 - ah);
+    a:= -((ah * hulp3 - a) * hulp1 - sh);
+    _i_f s _> tp26 _t_h_e_n s:= s - tp27m1;
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rca:
+  a:= circ shift(a, -n);
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rcs:
+  s:= circ shift(s, -n);
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rcas:
+  _i_f n>26 _t_h_e_n _b_e_g_i_n n:= 53-n; _g_o_t_o lcas2 _e_n_d;
+rcas2:
+  _i_f n#0 _t_h_e_n
+  _b_g_n
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a % hulp1;
+    sh:= s % hulp1;
+    at:= ah * hulp1 - a;
+    a:= -((sh * hulp1 - s) * hulp3 - ah);
+    s:= -(at * hulp2 - sh);
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1;
+    _i_f negs _t_h_e_n s:= s - tp26m1;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rcsa:
+  _i_f n>27 _t_h_e_n _b_g_n n:= 54 - n; _g_o_t_o lcsa2 _e_n_d;
+rcsa2:
+  _i_f n#0 _t_h_e_n
+  _b_g_n
+    _i_f negs _t_h_e_n s:= s + tp27m1;
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s % hulp1;
+    ah:= a % hulp1;
+    st:= sh * hulp1 - s;
+    s:= -((ah * hulp1 - a) * hulp3 - sh);
+    a:= -(st * hulp3 - ah);
+    _i_f s _> tp26 _t_h_e_n s:= s - tp27m1;
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+lua:
+  _i_f n _> 26 _t_h_e_n a:= sign(a) * 0 _e_l_s_e
+  _i_f a # 0 & n # 0 _t_h_e_n
+  _b_g_n
+    hulp2:= tp[26 - n]; at:= a - a % hulp2 * hulp2;
+    a:= _i_f at = 0 _t_h_e_n sign(a) * 0 _e_l_s_e tp26 / hulp2 * at
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel;
+
+lus:
+  _i_f n _> 26 _t_h_e_n s:= sign(s) * 0 _e_l_s_e
+  _i_f s # 0 & n # 0 _t_h_e_n
+  _b_g_n
+    hulp2:= tp[26 - n]; st:= s - s % hulp2 * hulp2;
+    s:= _i_f st = 0 _t_h_e_n sign(s) * 0 _e_l_s_e tp26 / hulp2 * st
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel;
+
+luas:
+  _i_f n > 26 _t_h_e_n
+  _b_g_n
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    hulp1:= tp[n - 26]; hulp2:= tp26/hulp1;
+    a:= -(s % hulp2 * hulp2 - s) * hulp1;
+    s:= _i_f negs _t_h_e_n -tp26m1 _e_l_s_e 0;
+    _i_f nega _t_h_e_n
+    _b_g_n
+      a:= a - tp26m1 + hulp1 - 1;
+      s:= s + tp26m1
+    _e_n_d;
+  _e_n_d _e_l_s_e
+  _i_f n # 0 _t_h_e_n
+  _b_g_n
+    _i_f nega _t_h_e_n a:= a + tp26m1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1;
+    sh:= s % hulp2;
+    a:= -((a % hulp2 * hulp2 - a) * hulp1 - sh);
+    s:= -(sh * hulp2 - s) * hulp1;
+    _i_f negs _t_h_e_n s:= s - tp26m1;
+    _i_f nega _t_h_e_n
+    _b_g_n a:= a - tp26m1; s:= s + hulp1 - 1 _e_n_d;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+lusa:
+  _i_f n>26 _t_h_e_n
+  _b_g_n
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    hulp1:= tp[n - 27]; hulp2:= tp26/hulp1;
+    s:= -(a % hulp2 * hulp2 - a) * hulp1;
+    a:= 0;
+    _i_f negs _t_h_e_n
+    _b_g_n s:= s - tp26m1 + hulp1 - 1;  a:= -0 _e_n_d;
+  _e_n_d _e_l_s_e
+  _i_f n # 0 _t_h_e_n
+  _b_g_n
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a % hulp3;
+    a:= -(ah * hulp3 - a) * hulp1;
+    s:= -((s % hulp2 * hulp2 - s) * hulp1 - ah);
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1;
+    _i_f negs _t_h_e_n
+    _b_g_n s:= s - tp26m1; a:= a + hulp1 - 1 _e_n_d;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rua:
+  a:= _i_f n _> 26 _t_h_e_n sign(a) * 0 _e_l_s_e a % tp[n];
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel;
+
+rus:
+  s:= _i_f n _> 26 _t_h_e_n sign(s) * 0 _e_l_s_e s % tp[n];
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel;
+
+ruas:
+  _i_f n>26 _t_h_e_n
+  _b_e_g_i_n s:= a%tp[n-26]; a:= _i_f nega _t_h_e_n -0 _e_l_s_e 0;
+    _i_f nega & ~negs _t_h_e_n s:= s + tp26m1 _e_l_s_e
+    _i_f negs & ~ nega _t_h_e_n s:= s - tp26m1
+  _e_n_d _e_l_s_e _i_f n#0 _t_h_e_n
+  _b_g_n
+    hulp1:= tp[n]; hulp2:= tp26/hulp1;
+    ah:= a % hulp1;
+    _i_f nega _t_h_e_n a:= a + tp26m1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    s:= -((a % hulp1 * hulp1 - a) * hulp2 - s % hulp1);
+    a:= ah;
+    _i_f negs _t_h_e_n s:= s - tp26m1;
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= a; cond _e_n_d;
+  _g_o_t_o timel2;
+
+rusa:
+  _i_f n>26 _t_h_e_n
+  _b_e_g_i_n a:= s%tp[n-27]; s:= _i_f negs _t_h_e_n -0 _e_l_s_e 0 _e_n_d
+  _e_l_s_e _i_f n # 0 _t_h_e_n
+  _b_g_n
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s % hulp1;
+    _i_f negs _t_h_e_n s:= s + tp26m1;
+    _i_f nega _t_h_e_n a:= a + tp27m1;
+    a:= -((s % hulp1 * hulp1 - s) * hulp3 - a % hulp1);
+    s:= sh;
+    _i_f a _> tp26 _t_h_e_n a:= a - tp27m1
+  _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n _b_g_n val:= s; cond _e_n_d;
+  _g_o_t_o timel2;
+
+nora:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  b:= l:= norm shift(a, val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n a:= val; _g_o_t_o timel;
+
+nors:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  b:= l:= norm shift(s, val);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n s:= val; _g_o_t_o timel;
+
+feq:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addrop _t_h_e_n _b_g_n valh:= 0; valt:= addr _e_n_d _e_l_s_e
+  _i_f addr = 57 _t_h_e_n
+  _b_g_n valh:= fh; valt:= ft _e_n_d _e_l_s_e
+  _i_f addr = 59 _t_h_e_n
+  _b_g_n valh:=  a; valt:=  s _e_n_d _e_l_s_e
+  _b_g_n cg:= 0; mem; valh:= m; addr:= addr + 1; mem; valt:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown2;
+  _i_f signinc _t_h_e_n of:= 1;
+  _i_f b21 = 1 _t_h_e_n _b_g_n valh:= -valh; valt:= -valt _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  _i_f abs(valh) > tp14m1 _t_h_e_n nint:= 1;
+  fh:= valh; ft:= valt;
+  _g_o_t_o time0;
+
+eqf:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f b21 = 0 _t_h_e_n _b_g_n valh:= fh; valt:= ft _e_n_d _e_l_s_e
+  _b_g_n valh:= -fh; valt:= -ft _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  _i_f abs(valh) > tp14m1 _t_h_e_n nint:= 1;
+  cg:= 0; m:= valh; stm; addr:= addr + 1; m:= valt; stm;
+  _i_f mc addr _t_h_e_n b up2;
+  _g_o_t_o time0;
+
+geq:
+  calc addr;
+  _i_f addr = 57 _t_h_e_n undef(341);
+  cg:= 0; memreg; valt:= m; valh:= sign(m) * 0;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b21 = 1 _t_h_e_n _b_g_n valh:= -valh; valt:= -valt _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  fh:= valh; ft:= valt;
+  _g_o_t_o time0;
+
+eqg:
+  calc addr;
+  _i_f regop _t_h_e_n undef(312);
+  _i_f b21 = 0 _t_h_e_n _b_g_n valh:= fh; valt:= ft _e_n_d _e_l_s_e
+  _b_g_n valh:= -fh; valt:= -ft _e_n_d;
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  _i_f ~(valh = 0 & sign(1/valh) = sign(1/valt)) _t_h_e_n nint:= 1;
+  cg:= 0; m:= valt; stm1;
+  _i_f mc addr _t_h_e_n b up1;
+  _g_o_t_o time0;
+
+ftd:
+  flag:= _t_r_u_e;
+fplus:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f addrop _t_h_e_n _b_g_n valh:= 0; valt:= addr _e_n_d _e_l_s_e
+  _i_f addr = 57 _t_h_e_n
+  _b_g_n valh:= fh; valt:= ft _e_n_d _e_l_s_e
+  _i_f addr = 59 _t_h_e_n
+  _b_g_n valh:=  a; valt:=  s _e_n_d _e_l_s_e
+  _b_g_n cg:= 0; mem; valh:= m; addr:= addr + 1; mem; valt:= m _e_n_d;
+  _i_f mc addr _t_h_e_n bdown2;
+  _i_f signinc _t_h_e_n of:= 1;
+  x:= compf(fh, ft); y:= compf(valh, valt);
+  _i_f flag _t_h_e_n
+  _b_g_n
+    _i_f b21 = 0 _t_h_e_n
+    _b_g_n x:= x * y; ccs:= ccs + 4;  ccsof:= ccsof + 45 _e_n_d _e_l_s_e
+    _b_g_n
+      _i_f x = 0 & y =0 _t_h_e_n undef(120);
+      x:= x / y; ccs:= ccs + 44; ccsof:= ccsof + 5
+    _e_n_d
+  _e_n_d _e_l_s_e
+  _b_g_n
+    x:= _i_f b21 =0 _t_h_e_n x + y _e_l_s_e x - y;
+    _i_f b20c19 = 1 _t_h_e_n ccs:= ccs + 1;
+    ccsof:= ccsof + 9
+  _e_n_d;
+  valh:= head of(x); valt:= tail of(x);
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  _i_f abs(valh) > tp14m1 _t_h_e_n nint:= 1;
+  fh:= valh; ft:= valt;
+  _g_o_t_o time0;
+
+gtd:
+  flag:= _t_r_u_e;
+gplus:
+  calc addr;
+  _i_f addr = 57 _t_h_e_n undef(342);
+  cg:= 0; memreg; valt:= m; valh:= sign(m) * 0;
+  x:= compf(fh, ft); y:= compose(valh, valt);
+  _i_f flag _t_h_e_n
+  _b_g_n
+    _i_f b21 = 0 _t_h_e_n
+    _b_g_n x:= x * y; ccs:= ccs + 5;  ccsof:= ccsof + 43 _e_n_d _e_l_s_e
+    _b_g_n
+      _i_f x = 0 & y =0 _t_h_e_n undef(121);
+      x:= x / y; ccs:= ccs + 45; ccsof:= ccsof + 5
+    _e_n_d
+  _e_n_d _e_l_s_e
+  _b_g_n
+    x:= _i_f b21 =0 _t_h_e_n x + y _e_l_s_e x - y;
+    ccsof:= ccsof + 9
+  _e_n_d;
+  valh:= head of(x); valt:= tail of(x);
+  _i_f b18c17 > 0 _t_h_e_n condf;
+  _i_f abs(valh) > tp14m1 _t_h_e_n nint:= 1;
+  fh:= valh; ft:= valt;
+  _g_o_t_o time0;
+
+jump:
+  flag:= _t_r_u_e;
+goto:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d _e_l_s_e
+  _i_f b16c15 = 1 _t_h_e_n
+  _b_g_n _i_f of = 0 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b16c15 = 1 _t_h_e_n of:= 0;
+  _i_f addrop _t_h_e_n val:= addr _e_l_s_e
+  _i_f addr = 62 _t_h_e_n undef(343) _e_l_s_e
+  _b_g_n cg:= 0; memreg; val:= m _e_n_d;
+  _i_f b21 = 1 _t_h_e_n val:= -val;
+  hulp1:= val;
+  _i_f abs(val) > tp18m1 _t_h_e_n val:= star(val);
+  _i_f flag _t_h_e_n val:= -(-ot - val);
+  _i_f 1/val < 0 _t_h_e_n undef(26350) _e_l_s_e
+  _i_f val > tp18m1 _t_h_e_n val:= star(val) _e_l_s_e
+  _i_f val > tp18m3 _t_h_e_n _e_l_s_e
+  _i_f val > max addr _t_h_e_n undef(26351);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  _i_f tcnt = 32 _t_h_e_n tcnt:= 0;
+  tlist[tcnt]:= ot;
+  ot:=val;
+  _i_f b18c17 = 0 _t_h_e_n _g_o_t_o time0;
+  y:= (_i_f 1/hulp1 < 0 _t_h_e_n hulp1 + tp26m1 _e_l_s_e hulp1) % tp18;
+  x:= y % 2; c:= y - x - x;
+  y:= x % 2; iv:= x - y - y;
+  x:= y % 2; lt:= y - x - x;
+  y:= x % 2; of:= x - y - y;
+  x:= y % 2; last par word:= -(y - x - x - 1);
+  y:= x % 2; nint:= x - y - y;
+  x:= y % 2; ov:= y - x - x;
+  _i_f bt = 0 ! x # 0 _t_h_e_n _b_g_n iv:= ov:= 1; bt:= 0 _e_n_d;
+  _g_o_t_o time0;
+
+repn:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d _e_l_s_e
+  _i_f b16c15 = 1 _t_h_e_n
+  _b_g_n _i_f of = 0 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f b16c15 = 1 _t_h_e_n of:= 0;
+  hulp1:= b21 + b21 + b21 + b21 + b20c19;
+  _i_f ~ filled[hulp1] _t_h_e_n undef(25410);
+  x:= m0[hulp1] -1;
+  _i_f trace _t_h_e_n report reading(hulp1, x + 1);
+  _i_f x < -tp26m1 _t_h_e_n x:= tp26m1;
+  m0[hulp1]:= x;
+  _i_f trace _t_h_e_n report writing(hulp1, x);
+  _i_f _i_f b18c17 = 0 _t_h_e_n _t_r_u_e _e_l_s_e
+       _i_f b18c17 = 1 _t_h_e_n x _> 1 _e_l_s_e
+       _i_f b18c17 = 2 _t_h_e_n x = 0 _e_l_s_e x _> 0 _t_h_e_n
+  _b_g_n
+    _i_f b14t0 > max addr _t_h_e_n undef(26354);
+    jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+    _i_f tcnt = 32 _t_h_e_n tcnt:= 0;
+    tlist[tcnt]:= ot;
+    ot:= b14t0
+  _e_n_d;
+  _g_o_t_o time0;
+
+subn:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d _e_l_s_e
+  _i_f b16c15 = 1 _t_h_e_n
+  _b_g_n _i_f of = 0 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f b16c15 = 1 _t_h_e_n of:= 0;
+  hulp2:= _i_f ingreep type = 2 _t_h_e_n tlink + tp24 _e_l_s_e tlink;
+  x:= b18c17 + b21;
+  hulp1:= x + x + x + x + b20c19 + 8;
+  _i_f prot _t_h_e_n
+  _b_g_n
+    _i_f hulp1 > 15 & dgp[0] _> 0 _t_h_e_n undef(27503)
+  _e_n_d;
+  filled[hulp1]:= _t_r_u_e;
+  m0[hulp1]:= hulp2;
+  _i_f trace _t_h_e_n report writing(hulp1, hulp2);
+  _i_f b14t0 > max addr _t_h_e_n undef(26355);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  _i_f tcnt = 32 _t_h_e_n tcnt:= 0;
+  tlist[tcnt]:= hulp2 - tp26m1;
+  ot:= b14t0;
+  _g_o_t_o time0;
+
+subc:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d _e_l_s_e
+  _i_f b16c15 = 1 _t_h_e_n
+  _b_g_n _i_f of = 0 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  subcd:= bt = 1 & b18c17 = 3;
+  gate:= bt = 0 & addr _> 256 & addr < 320;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b16c15 = 1 _t_h_e_n of:= 0;
+  _i_f gate _t_h_e_n prot:= _f_a_l_s_e;
+  _i_f addrop _t_h_e_n val:= addr _e_l_s_e
+  _i_f addr = 62 _t_h_e_n undef(344) _e_l_s_e
+  _b_g_n cg:= 0; memreg; val:= m _e_n_d;
+  _i_f gate _t_h_e_n prot:= _t_r_u_e;
+  hulp2:= _i_f ingreep type = 2 _t_h_e_n tlink + tp24 _e_l_s_e tlink;
+  addr:= _i_f b > tp18m1 _t_h_e_n star(b) _e_l_s_e b;
+  _i_f 1/addr < 0 _t_h_e_n undef(26362);
+  _i_f ~addr op & b = 0 _t_h_e_n undef(26363);
+  _i_f gate & addr < 256 _t_h_e_n undef(27502);
+  cg:= 0; m:= hulp2; stm;
+  b:= b + 1;
+  _i_f abs(val) > tp18m1 _t_h_e_n val:= star(val);
+  _i_f 1/val < 0 _t_h_e_n undef(26352) _e_l_s_e
+  _i_f val > tp18m3 _t_h_e_n _e_l_s_e
+  _i_f val > max addr _t_h_e_n undef(26353);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  _i_f tcnt = 32 _t_h_e_n tcnt:= 0;
+  tlist[tcnt]:= hulp2 - tp26m1;
+  ot:=val;
+  _i_f gate _t_h_e_n _b_g_n bt:= 1; iv:= 0 _e_n_d;
+  _i_f subcd _t_h_e_n iv:= 0;
+  _g_o_t_o time2;
+
+do:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d _e_l_s_e
+  _i_f b16c15 = 1 _t_h_e_n
+  _b_g_n _i_f of = 0 _t_h_e_n _g_o_t_o skip _e_n_d;
+  calc addr;
+  _i_f mc addr _t_h_e_n bdown1;
+  _i_f b16c15 = 1 _t_h_e_n of:= 0;
+  _i_f b18c17 = 3 _t_h_e_n s:= addr;
+  _i_f addr = 62 _t_h_e_n undef(345) _e_l_s_e
+  _b_g_n cg:= 0; memreg; val:= m _e_n_d;
+  or:= val;
+  dcs:= dcs + 1; _i_f dcs > dcs max _t_h_e_n undef(3);
+  _i_f key _t_h_e_n
+  _b_g_n ingreep type:= 1; ir addr:= 28; _g_o_t_o ingreep _e_n_d;
+  _i_f trace _t_h_e_n report eod(addr, val);
+  _g_o_t_o basis cyclus 2;
+
+clp:
+  _i_f b16c15 = 1 _t_h_e_n undef(212);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  c:= parbit(last par word);
+  _g_o_t_o time0;
+
+int:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  val:= nint; nint:= 0;
+  _i_f b16c15 # 1 _t_h_e_n c:= val;
+  _g_o_t_o time0;
+
+rgt:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  val:=  _i_f b11t5 = 8 _t_h_e_n a _e_l_s_e
+	 _i_f b11t5 = 9 _t_h_e_n s _e_l_s_e b;
+  _i_f b21 = 1 _t_h_e_n val:= - val;
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n
+  _b_g_n  _i_f b4t0 = 0 _t_h_e_n a:= val _e_l_s_e
+	 _i_f b4t0 = 1 _t_h_e_n s:= val _e_l_s_e b:= val
+  _e_n_d;
+  _g_o_t_o time0;
+
+lees q:
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f b20 = 0 _t_h_e_n l:= b5t0 _e_l_s_e
+  _b_g_n
+    l:= b5t0 + b;
+    _i_f l < 0 ! l > 1 _t_h_e_n undef(141)
+  _e_n_d;
+  _i_f b11t9= 5 _t_h_e_n val:= _i_f l = 0 _t_h_e_n   if0 _e_l_s_e   if1 _e_l_s_e
+  _i_f b11t9= 6 _t_h_e_n val:= _i_f l = 0 _t_h_e_n lvif0 _e_l_s_e lvif1 _e_l_s_e
+  undef(145);
+  _i_f b8t6 = 1 _t_h_e_n
+  val:= and( val, _i_f b24 = 0 _t_h_e_n a _e_l_s_e s);
+  _i_f b18c17 > 0 _t_h_e_n cond;
+  _i_f b16c15 # 1 _t_h_e_n
+  _b_g_n _i_f b24 = 0 _t_h_e_n a:= val _e_l_s_e s:= val _e_n_d;
+  _g_o_t_o time1;
+
+maak q:
+  _i_f b16c15 = 1 _t_h_e_n undef(213);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f bt = 0 _t_h_e_n undef(130);
+  _i_f b20 = 0 _t_h_e_n l:= b5t0 _e_l_s_e
+  _b_g_n
+    _i_f b < 0 _t_h_e_n undef(142);
+    l:= b5t0 + b
+  _e_n_d;
+  _i_f l > 39 _t_h_e_n undef(143);
+  _i_f b11t9 = 0 _t_h_e_n
+  _b_g_n
+    _i_f read q(l, afv0, afv1) = 0 _t_h_e_n undef(147);
+    set q(l, af0, af1, b24); attendeer charon af(l)
+  _e_n_d _e_l_s_e
+  _i_f b11t9 = 1 _t_h_e_n
+  _b_g_n
+    _i_f read q(l, ifv0, ifv1) = 0 _t_h_e_n undef(148);
+    set q(l, if0, if1, b24)
+  _e_n_d _e_l_s_e
+  _i_f b11t9 = 2 _t_h_e_n
+  _b_g_n
+    _i_f read q(l, lvifv0, lvifv1) = 0 _t_h_e_n undef(149);
+    set q(l, lvif0, lvif1, b24)
+  _e_n_d _e_l_s_e
+  undef(146);
+  _g_o_t_o time1;
+
+maak iv:
+  _i_f b16c15 = 1 _t_h_e_n undef(214);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+  _i_f bt = 0 _t_h_e_n undef(131);
+  iv:= b24;
+  _g_o_t_o time0;
+
+maak ov:
+  _i_f b16c15 = 1 _t_h_e_n undef(215);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+
+  _i_f bt = 0 _t_h_e_n undef(132);
+  ov:= b24;
+  _g_o_t_o time0;
+
+itvon:
+  _i_f b16c15 = 1 _t_h_e_n undef(216);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+
+  _i_f bt = 0 _t_h_e_n undef(133);
+  itv:= 1;
+  _g_o_t_o basis cyclus1;
+
+memprot:
+  _i_f b16c15 = 1 _t_h_e_n undef(217);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+
+  _i_f bt = 0 _t_h_e_n undef(134);
+  b20c19:= 2; b14t0:= tp14; calc addr;
+  cg:= 0; mem reg; val:= m;
+  hulp1:= bitstring(17,13,val) * 16;
+  _i_f hulp1 > max addr % tp9 _t_h_e_n undef(26361);
+  val:= circ shift(val, 3);
+  _f_o_r hulp3:= 0 _s_t_e_p 1 _u_n_t_i_l 15 _d_o
+  dgp[hulp1 + hulp3]:=
+		   bit(hulp3, val) * 2 + bit(hulp3 % 8 + 25, val) - 1;
+  b up1;
+  _g_o_t_o time2;
+
+operate:
+  _i_f b16c15 = 1 _t_h_e_n undef(226);
+  _i_f b16c15 > 1 _t_h_e_n
+  _b_g_n _i_f b16c15 # c+2 _t_h_e_n _g_o_t_o skip _e_n_d;
+
+  _i_f b20c19 # 2 _t_h_e_n l:= b14t0 _e_l_s_e l:= b14t0 + b;
+  _i_f l < 0 ! l > 15 _t_h_e_n undef(154);
+  _b_g_n
+    _s_w_i_t_c_h act:= 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,16;
+    _g_o_t_o act[l + 1];
+  1:  newpage;     _g_o_t_o time0;
+  2:  s:= rehep;   _g_o_t_o time0;
+  3:  puhep(s);    _g_o_t_o time0;
+  4:  col(s);      _g_o_t_o time0;
+  5:  prsym(s);    _g_o_t_o time0;
+  6:  s:= resym;   _g_o_t_o time0;
+  7:  pusym(s);    _g_o_t_o time0;
+  8:  csym(s);     _g_o_t_o time0;
+  9:  proct(s, 9); _g_o_t_o time0;
+  10: s:= reoct;   _g_o_t_o time0;
+  11: undef(155);  _g_o_t_o time0;
+  12: undef(156);  _g_o_t_o time0;
+  13: print(s);    _g_o_t_o time0;
+  14: s:= read;    _g_o_t_o time0;
+  15: punch(s);    _g_o_t_o time0;
+  16: cpunch(s);   _g_o_t_o time0;
+  _e_n_d operate;
+
+
+timel:
+  ccs:= ccs + (_i_f l < 16 _t_h_e_n 1 _e_l_s_e 2);
+  _g_o_t_o time0;
+
+timel2:
+  ccs:= ccs + 1 + (l - 1) % 2;
+  _g_o_t_o time0;
+
+skip:
+  _i_f trace _t_h_e_n report skip; _g_o_t_o time0;
+
+time3:
+  ccs:= ccs + 1;
+time2:
+  ccs:= ccs + 1;
+time1:
+  ccs:= ccs + 1;
+time0:
+  _i_f ingreep type > 0 _t_h_e_n _b_g_n bt:= 1; iv:= 0 _e_n_d;
+
+  ingreep type:= itv:= 0; prot:= bt = 0;
+  _i_f sva _t_h_e_n undef(0);
+
+  _i_f charon teller > 0 _t_h_e_n
+  _b_g_n
+    charon teller:= charon teller - ccs + ccs1;
+    _i_f charon teller _< 0 _t_h_e_n wek charon
+  _e_n_d;
+
+  ccs1:= ccs; dcs:= 0;
+  _i_f trace _t_h_e_n report eoi;
+  _i_f key _t_h_e_n
+  _b_g_n ingreep type:= 1; ir addr:= 28; _g_o_t_o ingreep _e_n_d;
+
+
+  _i_f iv = 0 _t_h_e_n x:= y:= 0 _e_l_s_e
+  _b_g_n
+    x:= lvif0; y:= lvif1;
+    _i_f if0 + if1 > 0 _t_h_e_n
+    _b_g_n
+      _i_f and(and(ie0, lvif0), if0) +
+	   and(and(ie1, lvif1), if1) > 0 _t_h_e_n
+      _b_g_n _c_o charon ingreep;
+	ingreep type:= 1; ir addr:= 24; _g_o_t_o ingreep
+      _e_n_d charon ingreep
+    _e_n_d minstens een if aan
+  _e_n_d horend;
+
+  ie0:= x; ie1:= y; _c_o bewaren voor volgende opdracht;
+
+  _g_o_t_o basis cyclus 1;
+
+ingreep:
+  _i_f trace _t_h_e_n report interrupt(ir addr);
+  _i_f itv = 1 _t_h_e_n undef(135);
+  prot:= _f_a_l_s_e;
+  cg:= 0; addr:= ir addr; mem1; or:= m;
+  _g_o_t_o basis cyclus 2;
+
+_e_n_d
+_e_n_d

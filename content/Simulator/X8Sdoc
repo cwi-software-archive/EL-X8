@@ -1,0 +1,2119 @@
+
+_b kopje("") _e
+
+_b hoofdstuk:= 0; bladzijde:= 1 _e
+
+0. _I_n_h_o_u_d_s_o_p_g_a_v_e_.|"
+|?
+	
+	1.  Doel.
+
+	2.  Overwegingen.
+	    2.1.  Redenen.
+	    2.2.  De eigenschappen van de geimplementeerde machine.
+	    2.3.  Uitbreidingen.
+	    2.4.  Programmacorrectheid.
+
+	3.  Faciliteiten en beperkingen.
+
+	4.  Beschikbare procedures en variabelen.
+	    4.1.  Algemene eigenschappen.
+	    4.2.  Het monitordeel.
+	    4.3.  De registers.
+	    4.4.  Het geheugen.
+            4.5.  Console-procedures.
+	    4.6.  Hulp-procedures en -variabelen.
+
+	5.  Details van de implementatie.
+	    5.1.  De identificatie van de opdrachtcode.
+	    5.2.  Het kerngeheugen.
+	    5.3.  De geheugenprotectie.
+	    5.4.  De kleine registers.
+	    5.5.  De +0-preferentie.
+	    5.6.  De vaste-komma-vermenigvuldiging en -deling.
+	    5.7.  De schuif- en normeeropdrachten.
+	    5.8.  De drijvende-komma-opdrachten.
+	    5.9.  Het ingreepmechanisme.
+	    5.10. CHARON.
+	    5.11. De dynamische stoptoestand.
+
+	6.  Mogelijke uitbreidingen.
+	    6.1.  CHARON.
+	    6.2.  De tijdmeting.
+
+	7.  Lijst van foutmeldingen.
+	
+	8.  Het programma.
+	    8.1.  Efficientie en geheugenbeslag.
+	    8.2.  Gebruikte procedures.
+	    8.3.  De tekst van het programma.
+
+	9.  Het testprogramma.
+	    9.1.  Algemeen.
+	    9.2.  De tekst van het testprogramma.
+
+	10. Detailtests op de EL X8.
+|?|"
+|;
+
+_b kopje("") _e_n_d
+
+_b_e_g_i_n breedte:= 75;    hoofdstuk:= 1 _e_n_d
+
+1. _D_o_e_l_.|"
+
+	Het programma X8S simuleert machine-opdrachten van de |?EL X8|?
+	in ALGOL 60; het is geheel in ALGOL 60 geschreven, zonder
+	gebruikmaking van speciale codeprocedures. Het gehele
+	opdrachtenrepertoire van de |?EL X8|? wordt gesimuleerd, inclusief
+	de geheugenprotectie en de besturingstoestand; van CHARON is
+	alleen de IP-faciliteit geimplementeerd. Voor het testen
+	van machinecodeprogramma`s zijn uitgebreide hulpmiddelen
+	aanwezig, welke toegangelijk zijn via een speciale stuurtaal.|"
+|;
+
+
+_b_e_g_i_n   hoofdstuk:= 2; bladzijde:= 1 _e_n_d
+
+2. _O_v_e_r_w_e_g_i_n_g_e_n_.|"
+
+2.1. Redenen.|"
+
+	Het ALGOL 60 Millisysteem is ongeschikt om als basis te dienen
+	voor het testen van machinecodeprogramma`s; dit testen kan
+	daarom alleen op speciale tijden geschieden, met alle
+	ongemakken van dien. Een in ALGOL 60 geschreven simulator is
+	echter een gewoon ALGOL 60-programma dat op normale tijden
+	gedraaid kan worden, zonder daarbij de programma`s van andere
+	gebruikers in gevaar te brengen.|"
+	Onder een aantal omstandigheden is de werking van het CRO van
+	de |?EL X8|? ongedefinieerd (zie Reference Manual A4.4.3), iets wat tijdens
+	het testen van een programma zeker ongewenst is. Een simulator
+	kan onder deze omstandigheden passende maatregelen nemen.|"
+	Het is vrij omslachtig en bewerkelijk het preciese verloop van
+	een machinecodeprogramma van achter de console te volgen; een
+	simulator kan echter op elk gewenst ogenblik verslag doen over
+	de inhoud van registers en geheugenplaatsen. Anderszijds kan
+	men van achter de console onderzoek doen aan onverwachte
+	verschijnselen, terwijl het uiteraard niet mogelijk is voor de
+	simulator een stuurprogramma te schrijven dat passend reageert
+	op onvoorziene omstandigheden. De opbouw van de simulator is
+	echter zodanig dat een fout door de simulator waarschijnlijk
+	eerder opgemerkt wordt dan door de |?EL X8|?, terwijl als
+	standaardafwerking van niet door de programmeur voorziene
+	fouten de inhouden van alle registers en beschreven
+	geheugenplaatsen afgedrukt worden.|"
+
+2.2. De eigenschappen van de geimplementeerde machine.|"
+
+	Bij het schrijven van het programma deed zich herhaaldelijk
+	de vraag voor, wat er precies geimplementeerd moest worden.
+	Het is duidelijk dat de simulator betere eigenschappen moet
+	hebben dan de |?EL X8|? wat betreft de afwerking van "undefined"
+	situaties; echter moeten deze eigenschappen niet zo zijn
+	dat als het ware een nieuwe betere machine ontstaat waarop een
+	incorrect programma de schijn van correctheid zou kunnen
+	ophouden. Zo bevat de instructie |?F = M[56]|? een fout adres
+	waarop door de machine niet gereageerd wordt. De simulator
+	moet reageren, mag echter geen adresingreep (de normale
+	reactie op een fout adres) geven; dit soort fouten wordt door
+	de simulator behandeld alsof de |?EL X8|? erdoor in een statische
+	stop raakt.|"
+	We kunnen de afloop van een programma P op een (al dan niet
+	gesimuleerde) machine M aanduiden als M(P); deze grootheid
+	kan voor de |?EL X8|? drie waarden hebben: "correct" (wat dat ook
+	moge zijn), "undefined" en "statische stop". Bij het schrijven
+	van de simulator is getracht de volgende drie regels aan te houden.|" |?
+
+	Als X8(P) = "correct"        dan X8S(P) = "correct".        (1)
+
+	Als X8(P) = "undefined"      dan X8S(P) = "statische stop". (2)
+
+	Als X8(P) = "statische stop" dan X8S(P) = "statische stop". (3)
+|?|"
+
+	Op regels (1) en (3) zijn geen uitzonderingen (zie echter
+	2.4.), regel (2) daarentegen kon niet altijd zinvol gehandhaafd
+	worden (zie daarvoor 3.5.). Twee bijzondere gevallen van
+	"undefined" toestanden moeten hier genoemd worden.|"
+	Het eerste is het uitlezen van een door het onderhavige
+	programma nog niet beschreven geheugenplaats. Het effect
+	hiervan is uiteraard ongedefinieerd. De simulator houdt bij,
+	welke geheugenplaats beschreven is en welke niet; hiervoor
+	is 1 _B_o_o_l_e_a_n per geheugenplaats nodig. Om efficientieredenen
+	is deze _B_o_o_l_e_a_n dezelfde als die welke als gesimuleerd
+	geheugenpariteitsbit gebruikt wordt. Met andere woorden, een
+	geheugenplaats is beschreven als hij een woord van juiste
+	pariteit bevat, en is onbeschreven als hij een woord van foute
+	pariteit bevat. Bij het starten van de simulator wordt het
+	gehele geheugen gevuld met woorden van foute pariteit. Dit
+	alles heeft wel tot gevolg dat in tegenspraak met regel (2)
+	hierboven een pariteitsingreep optreedt als een niet beschreven
+	geheugenplaats uitgelezen wordt terwijl OV _t_r_u_e is en M[25]
+	gevuld (voor deze laatste eis zie volgende alinea).|"
+	Het tweede geval van een bijzondere "undefined" toestand
+	treedt op wanneer een foutingreep plaats heeft (met OV _t_r_u_e)
+	terwijl de bijbehorende ingreepplaats (M[25] tot M[27]) niet
+	gevuld is. Aan de hand van de alinea hierboven zou men zich
+	dan het volgende kunnen voorstellen:|" |?
+
+	a.  er treedt een foutingreep op
+	b.  OV:= _f_a_l_s_e
+	c.  de betreffende ingreepplaats wordt uitgelezen
+	d.  hierdoor treedt een pariteitsingreep op
+	e.  OV = _f_a_l_s_e, dus "statische stop" |?|"
+
+	Dit heeft echter het nadeel dat alle niet voorziene ingrepen
+	zouden eindigen in een statische stop op foute pariteit;
+	daarom geven foutingrepen, waarbij de ingreepplaats niet
+	gevuld is, direct aanleiding tot een statische stop, alsof OV
+	_f_a_l_s_e was.|"
+	Beide bovenstaande complicaties hadden voorkomen kunnen worden
+	door voor "gevuld zijn" en "juiste pariteit" twee afzonderlijke
+	_B_o_o_l_e_a_n`s te nemen.|"
+
+2.3. Uitbreidingen.|"
+
+	De console van de |?EL X8|? stelt de programmeur beperkte
+	testhulpmiddellen ter beschikking; deze hulpmiddellen zijn in
+	de simulator gegeneraliseerd. Zo bestaat er een simultane
+	SVA (Stop Volgend Adres) op een willekeurig aantal adressen.
+	Verder zijn een aantal nieuwe faciliteiten toegevoegd; zo
+	bestaan er een Stop op Schrijven op gegeven Adres, analoog aan
+	SVA, en een circulaire lijst waarin de laatste 32 sprongadressen
+	bewaard worden. Voor een behandeling hiervan zie 3..|"
+
+2.4. Programmacorrectheid.|"
+
+	Bij het streven naar een correct programma deden zich twee
+	moeilijkheden voor.|"
+
+2.4.1. De onbekendheid met de |?EL X8|?.|"
+
+	Als bron van kennis van de |?EL X8|? heeft voornamelijk gediend
+	het "EL X8 Reference Manual" en wel in het bijzonder de
+	hoofdstukken A3, A4, A5, A6 en A7. In een aantal gevallen
+	bleek deze beschrijving echter onvolledig of onjuist; in deze
+	gevallen werd aanvullende informatie gezocht en soms verkregen
+	uit de tijdsdiagrammen van de |?EL X8|?, uit tests en uit de tekst
+	van de testprogramma`s die door Electrologica geleverd zijn.
+	Bij deze analyses bleek vaak dat een beantwoorde vraag twee
+	nieuwe vragen opwierp. Voor een volledig verslag van de
+	analyses en voor onbeantwoord gebleven vragen zie hoofdstuk
+	10..|"
+	Er zijn bezwaren aan te voeren tegen het implementeren van
+	eigenschappen die door tests en dergelijke ontdekt zijn en die
+	niet expliciet in het |?EL X8|? Reference Manual voorkomen. Soms
+	zijn deze eigenschappen echter redelijk en worden ze bevestigd
+	door de tijdsdiagrammen (bv. 10.10.), soms is zonder
+	aanvullende informatie implementatie niet mogelijk. Zo bevat
+	de beschrijving van de stapelende subroutine sprong
+	(Reference Manual A4.11.3) geen informatie over het toegestane bereik
+	van B. De tekst impliceert dat het om een STATB-adressering
+	gaat, zodat |?B = -0|? toelaatbaar is; dit blijkt niet zo
+	te zijn, bij sommige adresvarianten van de opdracht SUBC is zelfs |?B = +0|?
+	ontoelaatbaar (zie 10.16.).|"
+
+2.4.2. Efficientie versus correctheid.|"
+
+	Vaak bleken efficientie en correctheid elkaars vijanden te
+	zijn. Dit gold in het bijzonder voor de shiftopdrachten.
+	Hier heeft men de keus tussen verscheidene implementaties.
+	Men kan de registers "ontbinden" in _B_o_o_l_e_a_n _a_r_r_a_y`s, deze
+	schuiven zoals beschreven in het Reference Manual en vervolgens weer tot
+	registers opbouwen. Dit is gemakkelijk correct te krijgen maar
+	bijzonder inefficient. Het voor de hand liggende alternatief
+	is om met behulp van de operator % de schuifopdrachten na te
+	doen. Dit is zeer efficient, maar wel wordt dan de correctheid
+	ernstig bedreigd door de -0-preferente arithmetiek van de
+	|?EL X8|?. Bij deze en soortgelijke problemen werd gepoogd een
+	rigoureus correcte oplossing te vinden.|"
+|;
+
+
+_b_e_g_i_n   hoofdstuk:= 3; bladzijde:= 1 _e_n_d
+
+3. _F_a_c_i_l_i_t_e_i_t_e_n_ _e_n_ _b_e_p_e_r_k_i_n_g_e_n_.|"
+
+	De communicatie tussen programmeur en simulator wordt
+	onderhouden door de _p_r_o_c_e_d_u_r_e master, welke door de simulator
+	aangeroepen wordt zodra een bijzondere situatie ontstaat. De
+	globale _i_n_t_e_g_e_r variabele |?`error number`|? geeft dan aan om
+	welke reden de _p_r_o_c_e_d_u_r_e master aangeroepen werd; een lijst
+	van foutnummers is te vinden in hoofdstuk 7..|"
+	De programmeur kan gebruik maken van een standaard _p_r_o_c_e_d_u_r_e
+	master of zelf een procedure hiertoe schrijven. In het eerste
+	geval heeft hij de beschikking over alle faciliteiten van de
+	stuurtaal MASTER, welke elders beschreven zal worden; in het tweede geval heeft
+	hij de beschikking over het ALGOL 60 systeem en moet hij de
+	bijbehorende administratie zelf voeren, zoals beschreven in
+	hoofdstuk 4..|"
+	Een tweede communicatiemogelijkheid tussen programmeur en
+	simulator wordt gevormd door het trace-mechanisme.
+	Hierdoor kan de programmeur zich op verzoek doorlopend
+	op de hoogte laten houden van het verloop van de
+	opdrachten.|"
+	Ook hier kan de programmeur gebruik maken van de
+	standaard trace-procedures of zelf hiertoe procedures
+	schrijven. De benodige procedure staan beschreven
+	in hoofdstuk 4..|"
+	De volgende faciliteiten (met hun beperkingen) zijn in de
+	simulator aanwezig.|"
+
+3.1.    Voor elke geheugenplaats is een _B_o_o_l_e_a_n aanwezig welke aan
+	het begin op _f_a_l_s_e gezet wordt, en die aangeeft of `master`
+	aangeroepen moet worden als de betreffende plaats als opdracht
+	uitgevoerd zou worden.|"
+
+3.2.    Voor elke geheugenplaats is een _B_o_o_l_e_a_n aanwezig welke aan
+	het begin op _f_a_l_s_e gezet wordt, en die aangeeft of `master`
+	aangeroepen moet worden als de betreffende plaats beschreven
+	zou gaan worden.|"
+
+3.3.    Aan het begin worden de pariteitsbits van alle geheugenplaatsen
+	op "foute pariteit" gezet. Dit testhulpmiddel is in zekere
+	zin beperkend; het is namelijk nu mogelijk in een
+	machinecodeprogramma te rekenen op een pariteitsingreep die
+	op de |?EL X8|? (waarschijnlijk) niet zou optreden.|"
+
+3.4.    Aan het begin worden de registers van de geheugenprotectie
+	(de DP`s en GP`s) allemaal op _t_r_u_e gezet, zodat elk verlaten
+	van de besturingstoestand (opzettelijk of niet) zonder dat een
+	bruikbaar protectiepatroon gezet is, een protectieingreep
+	geeft. Deze faciliteit is in dezelfde zin beperkend als die
+	in 3.3..|"
+
+3.5.    Volgens de overwegingen in 2.2. zou elke situatie waarin de
+	inhoud van een register "undefined" wordt, moeten leiden tot
+	een statische stop (d.w.z. een aanroep van `master`). In
+	sommige gevallen is echter deze ongedefinieerdheid inherent
+	aan de, overigens legale, situatie. Met name is bij foutingrepen
+	niet gedefinieerd hoever de lopende opdracht afgemaakt is
+	(zie b.v. Reference Manual A5.2.3.); zo kan na de uitvoering van de opdracht
+	|?U,GOTO(BAD ADDRESS)|?, terwijl OF 1 is en |?BAD ADDRESS|? een
+	woord van foute pariteit bevat, OF 0 of 1 zijn. Het is niet
+	zinvol om op dergelijke situaties te testen en dan statisch
+	te stoppen. Een oplossing zou zijn, van de bedreigde registers
+	(voornamelijk B, OT, OF, IV en BT) bij te houden of ze
+	"undefined" zijn, en bij gebruik een foutmelding te geven.
+	Dit zou echter een vrij uitgebreid programma vereisen, en niet
+	efficient zijn.|"
+	Voor dit type van ongedefinieerdheid zijn in de simulator geen
+	voorzieningen getroffen. De volgorde waarin de handelingen
+	binnen een opdracht worden uitgevoerd is in de simulator
+	vrijwel altijd gelijk aan die in het Reference Manual; hieruit volgt dan
+	direct of bij een bepaalde ingreep een bepaalde handeling
+	wel of niet is uitgevoerd.|"
+
+3.6.    In de _i_n_t_e_g_e_r variabele `ccs` wordt het aantal cycli (van 1.25
+	microsec.) sinds het begin van het programma bijgehouden. Dit
+	aantal wordt voor de drijvende-komma-opdrachten niet precies
+	uitgerekend; in plaats daarvan wordt een minimum- en een
+	maximum-aantal berekend, het minimum wordt bij `ccs` geteld
+	en het verschil van maximum en minimum wordt bij `ccs of`
+	geteld. Wanneer `ccs` een bepaalde waarde overschrijdt, wordt
+	de _p_r_o_c_e_d_u_r_e master aangeroepen; dit is de enige beveiliging
+	tegen loops door sprongen.|"
+
+3.7.    De _i_n_t_e_g_e_r variabele `dcs` telt het aantal direct
+	op elkaar volgende DO/DOS-opdrachten, en
+	wordt op 0 teruggezet zo gauw een niet-DO/DOS-opdracht aangeboden wordt. Overschrijdt
+	`dcs` een bepaalde waarde, d.w.z. was de
+	keten van DO/DOS-opdrachten langer dan een bepaalde
+	lengte, dan wordt de _p_r_o_c_e_d_u_r_e master aangeroepen.
+	Op deze manier wordt voorkomen dat het te simuleren
+	programma in een loop van DO/DOS-opdrachten raakt.|"
+
+3.8.    Bij elke sprong-opdracht wordt de (oude) waarde van OT
+	opgenomen in de lijst van laatste 32 sprongadressen. Bij
+	elke subroutinesprong wordt de link opgenomen in de lijst
+	van laatste 32 sprongadressen. Deze lijst kan door een
+	procedure-aanroep afgedrukt worden.|"
+
+3.9.    Als de _b_o_o_l_e_a_n variabele `trace` _t_r_u_e is, worden de volgende
+	situaties in de simulator aan de programmeur kenbaar gemaakt:|"
+	lezen uit een geheugenplaats|"
+	schrijven in een geheugenplaats|"
+	opdracht beeindigd|"
+	opdracht geskipt|"
+	DO/DOS-opdracht beeindigd|"
+	ingreep-opdracht begonnen.|"
+
+3.10    Om de directe in- en uitvoer van gegevens in een
+	machinecodeprogramma te vergemakkelijken, heeft de simulator
+	een (pseudo-) machineopdracht die een aantal ALGOL 60-procedures
+	toegankelijk maakt.|"
+	Het bitpatroon van deze opdracht is:|"
+
+	    1 1 0 1 0 0 x 0 0 0 x x x x x x x x x x x x x x x x x.|"
+
+	De betekenis van de met x aangeduide bits is de volgende:|" |?
+
+	    _b_i_t_s        _w_a_a_r_d_e          _b_e_t_e_k_e_n_i_s
+
+	    20          0               geen B-modificatie
+			1               B-modificatie
+
+	    16,15       00              geen conditievolgende variant
+			01              geen betekenis
+			10              Y-variant
+			11              N-variant
+
+	    14 t/m 0                    n |?|"
+
+	Uit bits 14 t/m 0 en eventueel de inhoud van B wordt een
+	procedurenummer opgebouwd; de overeenkomstige procedure
+	wordt dan aangeroepen. De huidige implementatie bevat 16
+	procedurenummers, (de getallen 0 t/m 15) die vrijwel allemaal
+	transporten via het S-register uitvoeren. Bits 1 en 0
+	specificeren het I/O-mechanisme:|" |?
+
+		0       uitvoer regeldrukker
+		1       invoer
+		2       uitvoer bandponser
+		3       uitvoer kaartponser |?|"
+
+	terwijl bit 3 en 2 aangeven hoe de inhoud van het S-register
+	beschouwd moet worden:|" |?
+
+		0       als octade
+		1       als resym-waarde (zie LR1.1.,hoofdstuk 6)
+		2       als octaal getal van 27 bits
+		3       als decimaal getal.
+
+
+	Beschrijving:
+	conditievolgende varianten      Y, N
+	B-modificatie                   toegestaan
+					t:= 1 als B-modificatie
+					anders t:= 0
+	bewerking                       m:= n + t * B
+					x:= S
+			als m = 0       de _p_r_o_c_e_d_u_r_e new page wordt
+					aangeroepen
+			als m = 1       x:= rehep
+			als m = 2       puhep(x)
+			als m = 3       col(x)
+
+			als m = 4       prsym(x)
+			als m = 5       x:= resym
+			als m = 6       pusym(x)
+			als m = 7       csym(x)
+
+			als m = 8       x wordt als octaal getal
+					afgedrukt in 9 cijfers
+			als m = 9       van het invoermedium wordt
+					een octaal getal gelezen
+					(tussen apostrofs) en aan
+					x toegekend
+
+			als m = 12      print(x)
+			als m = 13      x:= read
+			als m = 14      punch(x)
+			als m = 15      cpunch(x)
+
+	conditiezettende variant        niet toegestaan
+	undisturbed-variant             niet toegestaan
+	hoofdfunctie                    S:= x
+|?|"
+|;
+
+
+_b_e_g_i_n hoofdstuk:=4; bladzijde:= 1 _e_n_d
+
+4. _B_e_s_c_h_i_k_b_a_r_e_ _p_r_o_c_e_d_u_r_e_s_ _e_n_ _v_a_r_i_a_b_e_l_e_n_.|"
+
+	Hieronder volgt een lijst van procedures en variabelen die gebruikt
+	kunnen worden bij het schrijven van andere versies van de _p_r_o_c_e_d_u_r_e
+	master of van de trace-procedures, en bij het wijzigen van de simulator zelf. Het is geen
+	uitputtende lijst van alle aanwezige namen, maar de hier niet
+	genoemde namen zijn hulpgrootheden bij de hier wel genoemde.|"
+
+
+4.1. Algemene eigenschappen.|"
+
+	In het buitenblok van de simulator zijn drie variabelen beschikbaar
+	waarmee bepaalde eigenschappen van de simulator beinvloed kunnen
+	worden.|"
+
+4.1.1. _i_n_t_e_g_e_r aantal kasten|"
+	geeft het aantal geheugenkasten aan dat gesimuleerd wordt. Voor een
+	verhoging van `aantal kasten` met 1 zijn 1853 geheugenplaatsen nodig
+	en 16384 plaatsen op de trommel.|"
+
+4.1.2. _i_n_t_e_g_e_r bufs|"
+	geeft de grootte van de buffers van de geheugensimulatie (zie 5.2.)
+	aan. De waarde van `bufs` mag niet lager dan 64 zijn. Voor een
+	verhoging van `bufs` met 1 zijn 4 geheugenplaatsen nodig.|"
+
+4.1.3. _i_n_t_e_g_e_r max master|"
+	geeft de grootte aan van het werkarray van de standaardprocedure
+	`master`. Voor de verhoging van `max master` met 1 is 1 geheugenplaats
+	nodig.|"
+
+
+4.2. Het monitordeel.|"
+
+4.2.1. _p_r_o_c_e_d_u_r_e start monitor|"
+	Deze procedure wordt door de simulator aangeroepen als laatste stap
+	in de initialisatie. Hij moet het te simuleren programma inlezen
+	(met `ip`, `bi` of anderszins) en starten (`lsip`, `lsbi`, `lsnb` of
+	`bva`).|"
+
+4.2.2. _p_r_o_c_e_d_u_r_e master|"
+	Deze wordt door de simulator aangeroepen zodra interventie van het
+	master-programma noodzakelijk wordt. De _i_n_t_e_g_e_r |?error number|?
+	geeft dan de reden aan; deze foutnummers zijn in de volgende klassen ingedeeld:|"
+|?
+		  0  -   99   bijzondere omstandigheden
+		100  -  199   foutieve gegevens voor een opdracht
+		200  -  299   opdracht onherkenbaar
+		300  -  399   adres onjuist
+		400  -  499   pariteitsfout
+		500  -  599   protectiefout
+		600  -  699   onjuist CHARON-gebruik|?|"
+
+	Voor de _p_r_o_c_e_d_u_r_e master zijn vooral de foutnummers die een bijzondere omstandigheid
+	aangeven, van belang:|"
+      0     einde opdracht terwijl `sva` _t_r_u_e is|"
+      1     het programma is in een dynamische
+	      stop geraakt|"
+      2     het programma heeft het maximaal
+	      toegestane aantal cycli overschreden|"
+      3     het programma heeft het maximaal
+	      toegestane aantal opeenvolgende
+	      DO/DOS-opdrachten overschreden|"
+      4     een door `no exec` gemerkte opdracht is in OR gehaald (OT is nog
+	      niet opgehoogd)|"
+      5     een door `no write` gemerkte geheugenplaats zal beschreven
+	      worden.|"
+	De _p_r_o_c_e_d_u_r_e master mag niet normaal terugkeren naar het hoofdprogramma,
+	maar moet eindigen met een aanroep van `bva`, `lsip`, `lsbi` of
+	`lsnb`, welke alle vier uiteindelijk de simulator op het juiste punt
+	herstarten. Dit geldt niet voor aanroepen met |?`error number`|? gelijk
+	aan 4 of 5; hiervan mag normaal teruggekeerd worden, het lopende
+	proces wordt dan vervolgd.|"
+
+4.2.3. _i_n_t_e_g_e_r error number|"
+	zie _p_r_o_c_e_d_u_r_e master.|"
+
+4.2.4. _b_o_o_l_e_a_n sva|"
+	vervangt de knop SVA op de console. Zie `master`, `lsip`, `lsbi` en
+	`lsnb`.|"
+
+4.2.5. _r_e_a_l ccs, ccs of, ccs max|"
+	vormen de administratie van het aantal gebruikte cycli. `ccs` is het
+	minimaal aantal gebruikte cycli, `ccs of` het (positieve) verschil
+	tussen maximaal en minimaal aantal gebruikte cycli, terwijl `ccs max`
+	een bovengrens vormt van het aantal te gebruiken cycli. `ccs` en
+	`ccs of` worden voortdurend door de simulator bijgewerkt, `ccs max`
+	blijft ongewijzigd. Als `ccs` groter dan `ccs max` blijkt te zijn,
+	wordt `master` aangeroepen met `error number` gelijk aan 2.|"
+
+4.2.6.   _r_e_a_l dcs, dcs max|"
+	worden gebruikt bij het testen op de lengte
+	van DO-loops. Bij elke overgang van een
+	DO/DOS-opdracht op de hierdoor aangewezen opdracht
+	wordt `dcs` met 1 opgehoogd; aan het einde van elke
+	andere opdracht wordt hij op 0 gezet.
+	Wordt `dcs` groter dan `dcs max` dan wordt
+	`master` aangeroepen met `error number`
+	gelijk aan 0.|"
+
+4.2.7. _i_n_t_e_g_e_r _a_r_r_a_y nowrite, noexec[0:max addr]|"
+	Beide _a_r_r_a_y_s worden bij het starten van de simulatie op _f_a_l_s_e
+	geinitialiseerd en worden verder niet door de simulator gewijzigd.
+	De monitor kan bepaalde elementen _t_r_u_e maken. Bij het schrijven in
+	een geheugenplaats n onderzoekt de simulator nowrite[n], en als
+	deze _t_r_u_e is wordt `master` aangeroepen met |?error number = 5|?;
+	het schrijven heeft dan nog niet plaats gehad. Bij het halen van
+	een instructie uit geheugenplaats n onderzoekt de simulator
+	noexec[n], en als deze _t_r_u_e is wordt `master` aangeroepen met
+	|?error number = 4|?; de opdracht bevindt zich dan al in OR maar
+	OT is nog niet opgehoogd. De test op noexec wordt alleen uitgevoerd
+	als de opdracht in OR wordt gehaald doordat OT ernaar verwijst,
+	en niet wanneer hij uitgevoerd wordt ten gevolge van een DO-opdracht
+	of een ingreep.|"
+
+4.2.8.  Het trace-mechanisme.|"
+
+	Afhankelijk van de waarde van de globale _b_o_o_l_e_a_n trace
+	wordt al dan niet een `trace` geproduceerd. Deze
+	`trace` bestaat uit het aanroepen van _e_e_n van een groep van zes
+	procedures, telkens wanneer er iets belangrijks gebeurt.
+	Van deze procedures wordt verwacht dat ze normaal terugkeren.
+	De zes procedures zijn:|"
+
+	report reading(addr, val):|"
+	de simulator heeft zojuist de waarde `val` gelezen uit de
+	geheugenplaats `addr`,|"
+
+	report writing(addr, val):|"
+	de simulator heeft zojuist de waarde `val` in de
+	geheugenplaats `addr` geschreven,|"
+
+	report eoi:|"
+	de simulator heeft zojuist een opdracht beeindigd,|"
+
+	report skip:|"
+	de simulator heeft zojuist een opdracht geskipt,|"
+
+	report eod(addr, instr):|"
+	de simulator heeft zojuist een DO/DOS-opdracht
+	beeindigd, welke aangaf dat als volgende opdracht
+	`instr` uit geheugenplaats `addr` uitgevoerd moet worden,
+	en|"
+
+	report interrupt(ir addr):|"
+	als volgende opdracht wordt de ingreepopdracht in
+	|?M[ir addr]|? uitgevoerd.|"
+
+4.2.9.  _p_r_o_c_e_d_u_r_e terminate|"
+	wordt door de simulator aangeroepen wanneer er een
+	fouttoestand optreedt terwijl |?`in monitor _= _t_r_u_e`|?. Bij eventueel
+	vervangen van deze procedure moet men er zorg voor dragen dat
+	`terminate` zelf zeker geen fouttoestanden kan veroorzaken,
+	daar anders een lawine van fouten ontstaat.|"
+
+
+4.3. De registers.|"
+
+4.3.1. _r_e_a_l fh, ft, a, s, b, ot|"
+	De registers zijn om efficientieredenen als _r_e_a_ls gedeclareerd; de
+	simulator zorgt dat ze nooit non-_i_n_t_e_g_e_r waarden gaan bevatten. Het
+	F-register als zodanig bestaat in de simulator niet (zie 5.8.); F-kop
+	is `fh`, F-staart is `ft`.|"
+
+4.3.2. _r_e_a_l c, iv, lt, of, last par word, nint, ov, bt|"
+	Ook de kleine registers zijn als _r_e_a_ls gedeclareerd, met de
+	conventie dat _t_r_u_e is 1 en _f_a_l_s_e is 0. Een LP-register is niet
+	aanwezig, in plaats daarvan wordt de variabele |?`last par word`|?
+	gebruikt, die niet de pariteitsbit van het laatst uit het geheugen
+	gehaalde woord bevat, maar het laatst uit het geheugen gehaalde
+	woord zelf. De waarde van LP kan hieruit verkregen worden als
+	|?`parbit(last par word)`|? (zie 4.6.2.), terwijl |?LP:= q|? ekwivalent
+	is met |?last par word:= -q|? waarbij q = 0,1.|"
+
+4.3.3. _r_e_a_l _p_r_o_c_e_d_u_r_e tlink|"
+	Het T-register wordt niet als variabele gesimuleerd (OT is er wel)
+	maar wordt, waar nodig, samengesteld door de _p_r_o_c_e_d_u_r_e tlink, welke T
+	aflevert met bit 26 gelijk aan 0.|"
+
+
+4.4. Het geheugen.|"
+
+4.4.1. _p_r_o_c_e_d_u_r_e stm; _r_e_a_l addr, m, cg;|"
+	De procedure stm bewerkstelligt het opbergen van de integerwaarde van
+	m in de door addr aangewezen geheugenplaats. `m` moet een gehele
+	waarde tussen -2 ^ 26 + 1 en 2 ^ 26 - 1 bevatten, terwijl addr tussen
+	0 en 2 ^ 18 - 1 moet liggen; blijkt addr groter dan |?`max addr`|?
+	te zijn, dan wordt, als de opdracht door de monitor uitgevoerd wordt,
+	het programma door een aanroep van de _p_r_o_c_e_d_u_r_e terminate (zie 4.2.9.)
+	beeindigd, terwijl anders
+	een adresingreep volgt. De waarde van cg moet 0 of 1 bedragen; als
+	cg = 0 wordt het woord met juiste pariteit weggeschreven, als
+	cg = 1 met foute pariteit.|"
+
+4.4.2. _p_r_o_c_e_d_u_r_e mem; _r_e_a_l addr, m, cg;|"
+	De waarde die zich bevindt op de door addr aangewezen geheugenplaats
+	wordt in m gehaald; addr moet aan dezelfde voorwaarden voldoen als
+	bij stm (zie 4.4.1.). De waarde van cg bepaalt de verwerking van de
+	pariteitsbit, en wel als volgt:|"
+	als cg = 0 wordt LP niet beinvloed en veroorzaakt een pariteitsfout
+	een pariteitsingreep,|"
+	als cg = 1 krijgt LP de waarde van de pariteitsbit en veroorzaakt een
+	pariteitsfout een pariteitsingreep,|"
+	als cg = 2 krijgt LP de waarde van de (eventueel foutieve) pariteitsbit
+	en wordt op een pariteitsfout niet gereageerd,|"
+	als cg = 3 krijgt LP de waarde van de (eventueel foutieve) pariteitsbit
+	en krijgt C de waarde 0 als de pariteit juist en 1 als hij fout is.|"
+
+4.4.3. _i_n_t_e_g_e_r max addr|"
+	De waarde van |?max addr|? is het grootste in de gesimuleerde machine
+	beschikbare geheugenadres.|"
+
+4.4.4. _i_n_t_e_g_e_r _a_r_r_a_y dgp[0:max addr % 512]|"
+	Om het veelvuldige (dure) indiceren van _B_o_o_l_e_a_n _a_r_r_a_ys tegen te gaan,
+	zijn de DP- en GP-registers gecombineerd tot een _i_n_t_e_g_e_r _a_r_r_a_y dat voor
+	elke aanwezige geheugenpagina (zie Reference Manual A5.2.1) 1 element bevat; de
+	waarde van dit element is dan |?(_i_f gp _t_h_e_n 2 _e_l_s_e 0) +|?
+	|?(_i_f dp _t_h_e_n 1 _e_l_s_e 0) - 1|?. De vraag of een pagina n tegen schrijven beschermd is,
+	luidt dan dgp[n]_>0, terwijl de vraag of een pagina n tegen lezen beschermd is,
+	neerkomt op dpg[n]>0.|"
+
+4.4.5. _i_n_t_e_g_e_r drum cnt|"
+	is het aantal trommeltransporten uitgevoerd ten behoeve van de
+	geheugensimulatie.|"
+
+4.4.6. _i_n_t_e_g_e_r _a_r_r_a_y filled[0:max addr]|"
+	De variabele filled[n] dient als pariteitsbit van geheugenplaats n;
+	hij wordt aan het begin van de simulatie op _f_a_l_s_e geinitialiseerd.|"
+
+
+4.5. Console-procedures.|"
+	Met een aantal van de hieronder vermelde procedures kunnen
+	console-functies uitgevoerd worden; de overige stellen enkele
+	functies beschikbaar die niet op de |?EL X8|? voorkomen maar wel
+	verwant zijn aan bestaande functies.|"
+
+4.5.1. _p_r_o_c_e_d_u_r_e bva|"
+	start het te simuleren machinecodeprogramma op het adres dat in OT
+	staat. Door het aanroepen van deze procedure verlaat men de
+	monitortoestand.|"
+
+4.5.2. _p_r_o_c_e_d_u_r_e ls|"
+	simuleert de druktoets LS (zie Reference Manual A7.2.3).|"
+
+4.5.3. _p_r_o_c_e_d_u_r_e lsip|"
+	simuleert het achtereenvolgens  indrukken van de druktoetsen LS en
+	IP. Een IP-band wordt ingelezen, de IF van de IP-lezer wordt _t_r_u_e
+	gemaakt, OT wordt 2 ^ 18 - 1, en als sva _f_a_l_s_e is, wordt het te
+	simuleren programma gestart; evenals op de |?EL X8|? volgt dan
+	onmiddellijk een CHARON-ingreep. Als sva _f_a_l_s_e is, verlaat men door
+	een aanroep van deze procedure de monitortoestand.|"
+
+4.5.4. _p_r_o_c_e_d_u_r_e lsnb|"
+	simuleert het achtereenvolgens indrukken van de druktoetsen LS en
+	NB. De IF van apparaat 38 wordt _t_r_u_e gemaakt, OT wordt 2 ^ 18 - 1,
+	en als sva _f_a_l_s_e is volgt een CHARON-ingreep; in dat geval
+	verlaat men de monitortoestand.|"
+
+4.5.5. _p_r_o_c_e_d_u_r_e lsbi|"
+	is analoog aan lsip, met dien verstande dat de band niet als IP-band
+	gelezen wordt maar als BI-band (zie MR132).|"
+
+4.5.6. _p_r_o_c_e_d_u_r_e ip|"
+	is een zuivere inleesprocedure, die onafhankelijk van de stand van de
+	registers een IP-band inleest, de registers ongewijzigd laat en de
+	monitortoestand niet opheft.|"
+
+4.5.7. _p_r_o_c_e_d_u_r_e bi|"
+	is analoog aan `ip`, met dien verstande dat de band niet als IP-band
+	gelezen wordt maar als BI-band.|"
+
+4.5.8. _b_o_o_l_e_a_n key|"
+	wordt op _f_a_l_s_e geinitialiseerd en verder door de simulator niet
+	gewijzigd. Wordt deze variabele door de monitor _t_r_u_e gemaakt,
+	dan volgt aan het eind van de lopende opdracht een sleutelgreep.|"
+
+4.6. Hulp-procedures en -variabelen.|"
+
+4.6.1. _r_e_a_l _p_r_o_c_e_d_u_r_e compf(head, tail); _v_a_l_u_e head, tail; _r_e_a_l head, tail;|"
+	De parameters head en tail moeten _i_n_t_e_g_e_r waarden hebben; de
+	afgeleverde waarde is een _r_e_a_l waarvan bits 53-27 gelijk zijn aan
+	bits 26-0 van head, bit 26 gelijk is aan bit 14 van head en bits
+	25-0 gelijk zijn aan bits 25-0 van tail.|"
+
+4.6.2. _i_n_t_e_g_e_r _p_r_o_c_e_d_u_r_e parbit(n); _v_a_l_u_e n; _i_n_t_e_g_e_r n;|"
+	De afgeleverde waarde is 1 als n als machinewoord beschouwd even
+	pariteit heeft, en 0 als n oneven pariteit heeft. Deze procedure
+	kan gebruikt worden om uit |?last par word|? (zie 4.3.2.) de waarde
+	van LP te bepalen.|"
+
+4.6.3. _i_n_t_e_g_e_r _p_r_o_c_e_d_u_r_e oct(val); _v_a_l_u_e val; _r_e_a_l val;|"
+	Deze procedure kan gebruikt worden om octale constanten te
+	specificeren. De waarde van `val` moet een geheel getal zijn tussen 0
+	en |?777 777 777|?; men denke zich dit getal neergeschreven als
+	decimaal getal van 9 cijfers; deze string van 9 cijfers wordt nu
+	beschouwd als de octale representatie van een machinewoord van de
+	|?EL X8|?; de hiermee corresponderende waarde wordt door de procedure
+	afgeleverd. Zo is oct(10) = 8, oct(75) = 61 en |?oct(777 777 776) = -1|?.
+	De werking is ongedefinieerd als niet aan de hierboven genoemde
+	voorwaarde is voldaan, of als de ontstane string van 9 cijfers geen
+	representatie van een octaal getal is.|"
+
+4.6.4. _i_n_t_e_g_e_r _p_r_o_c_e_d_u_r_e reoct|"
+	leest een octaal getal in, dat voorafgegaan moet zijn en gevolgd
+	moet worden door een apostrof. Voorafgaand aan de eerste apostrof
+	mogen geen cijfers voorkomen. Tussen de cijfers van het octale
+	getal mag telkens 1 spatie voorkomen.|"
+
+4.6.5. _p_r_o_c_e_d_u_r_e proct(m, dig); _v_a_l_u_e m, dig; _i_n_t_e_g_e_r m, dig;|"
+	De waarde van m wordt als octaal getal afgedrukt. Als dig = 6
+	wordt het getal afgedrukt in 6 cijfers, anders wordt het in 9
+	cijfers afgedrukt, met een spatie tussen het derde en vierde
+	cijfer. Het getal wordt voorafgegaan en gevolgd door een spatie.|"
+
+4.6.6. _p_r_o_c_e_d_u_r_e dump(from, to); _v_a_l_u_e from, to; _i_n_t_e_g_e_r from, to;|"
+	Van het geheugentraject van `from` tot `to` wordt een octale
+	dump op de regeldrukker geproduceerd. Er worden acht geheugenplaatsen
+	per regel afgedrukt. Als een geheugenplaats niet gevuld is,
+	wordt de overeenkomstige plaats met spaties gevuld; zijn alle
+	acht geheugenplaatsen van een regel niet gevuld, dan wordt de
+	regel niet afgedrukt. In de linker kantlijn worden de adressen
+	van het eerste en het laatste woord van de regel gegeven.|"
+
+4.6.7. _p_r_o_c_e_d_u_r_e print regs|"
+	geeft een afdruk van tlink (zie 4.3.3.), de registers F-kop,
+	F-staart, A, S, B en OR, de geheugenvariabelen addr en m
+	(zie 4.4.1. en 4.4.2.), de variabele |?`ir addr`|? die de
+	geheugenplaats aangeeft van de laatst uitgevoerde ingreep-opdracht,
+	een jump counter die het aantal sprongen aangeeft, de variabelen
+	`ccs` en |?`ccs of`|? (zie 4.2.5.) en de variabele |?`drum cnt`|?
+	(zie 4.4.5.).|"
+
+4.6.8. _p_r_o_c_e_d_u_r_e print tlist|"
+	geeft een afdruk van de lijst van de laatste 32 sprongadressen,
+	te beginnen met de meest recente. De vermelde adressen zijn de
+	adressen waarvandaan gesprongen werd. Als het een subroutinesprong
+	betrof, wordt ook de inhoud van de kleine registers gegeven, en wel
+	als de eerste drie octale cijfers van het adres. In het geval van
+	een gewone sprong zijn deze drie posities bezet door spaties.|"
+
+4.6.9. _p_r_o_c_e_d_u_r_e print dgp|"
+	geeft een afdruk van de DP- en GP-registers; de registers van
+	elke kast worden op een nieuwe regel afgedrukt.|"
+
+4.6.10. _p_r_o_c_e_d_u_r_e print charon|"
+	geeft een afdruk van de AF, IF en LVIF van die apparaten waarvan
+	IF of LVIF of beide variabel zijn.|"
+
+4.6.11. _r_e_a_l _a_r_r_a_y tp[0:27]|"
+	tp[n] is gelijk aan 2 ^ n.|"
+
+4.6.12. _i_n_t_e_g_e_r tp0, tp1, ... tp24, tp25;
+	_r_e_a_l tp26, tp27;|"
+	tpN is gelijk aan 2 ^ N.|"
+
+4.6.13. _i_n_t_e_g_e_r tp14m1, tp18m3, tp18m1, tp26m1;
+	_r_e_a_l tp27m1;|"
+	tpNm1 is 2 ^ N - 1, tp18m3 is 2 ^ 18 - 3.|"
+|;
+
+_b kopje("") _e
+
+_b_e_g_i_n hoofdstuk:= 5; breedte:= 75; bladzijde:= 1 _e_n_d
+
+5. _D_e_t_a_i_l_s_ _v_a_n_ _d_e_ _i_m_p_l_e_m_e_n_t_a_t_i_e_.|"
+
+	In dit hoofdstuk wordt de implementatie van een aantal saillante
+	punten behandeld, samen met de overwegingen die tot deze
+	implementatie hebben geleid.|"
+
+5.1. De identificatie van de opdrachtcode.|"
+	De opdrachtcode van de |?EL X8|? is in grote lijnen orthogonaal
+	opgebouwd; hiervan is zoveel mogelijk gebruik gemaakt. De inhoud
+	van OR wordt eerst gesplitst in een aantal hulpvariabelen waarvan
+	de namen aanduiden welke bits uit OR ze bevatten. Zo bevat b21
+	bit 21, b14t0 bit 14 tot 0, b24c21 bit 24 gevolgd door bit 21
+	(c van concatenated), b18c17 bit 18 gevolgd door bit 17 en zou
+	b18c21t18c3 achtereenvolgens de bits 18, 21, 20, 19, 18 en 3
+	bevatten. OR nu wordt gesplitst in b26t22, b21, b20c19, b18c17,
+	b16c15 en b14t0. De opdracht wordt eerst gedifferentieerd naar
+	de eerste 5 bits, d.w.z. naar b26t22; dit levert dus 32 klassen.
+	Twee klassen (te weten 11010 en 11110) zijn ongedefinieerd en
+	twee klassen (11011 en 11111) betreffen adresloze opdrachten die
+	anders behandeld worden.|"
+	Bij de adreshebbende opdrachten duidt b21 bijna altijd het al of
+	niet inverteren van de geheugenoperand aan; dit geldt niet bij de
+	opdrachten GOTO(:DYN) en GOTOR(:DYN), de klassen 10110 en 10111
+	en de opdrachten F/x en G/x.
+	Vele van de 28 klassen identificeren direct een opdracht. Aan een
+	aantal klassen moet echter meer zorg besteed worden. De elementen
+	van de _s_w_i_t_c_h sb26t22 bevatten een precieze beschrijving van de
+	verdere identificatie. Als de operand van het type :DYN blijkt te
+	zijn krijgt b20c19 de waarde 4; b20c19 wordt namelijk door het
+	adresberekeningsmechanisme gebruikt.|"
+	De analyse van de adresloze opdrachten is veel eenvoudiger dan de
+	tabellen in Reference Manual A4.18.4 zouden doen vermoeden. Er is maar _e_e_n
+	opdracht waarbij b19 = 1, te weten MEMPROT. Door een classificatie
+	volgens b14t12 valt de rest uiteen in 3 klassen:|"
+	b14t12 = 000, werkend op de registers,|"
+	b14t12 = 110, werkend op de kleine registers, en|"
+	b14t12 = 111, werkend op de CHARON-registers.|"
+	De eerste groep kan volgens b11t5 gesplitst worden in
+	schuifopdrachten (b11t5 = 0, 1, 2, 3), normeeropdrachten
+	(b11t5 = 5, 7), TENS/TENAS (b11t5 = 32) en de snelle
+	registertransporten (b11t5 = 8,9,10). Hierbij blijkt dat de
+	normeeropdrachten NORA, NORS en NORAS grote overeenkomst vertonen
+	met LUA(0), LUS(0) en LUAS(0).|"
+	De tweede groep bevat in b11t9 een nadere precisering van het
+	bedoelde kleine register, 000 voor IVON/IVOFF, 001 voor OVON/OVOFF,
+	010 voor ITVON, 011 voor CLP en 100 voor INT.|"
+	In de derde groep bepaalt bit 11 of de opdracht een transport naar
+	een AF-, IF- of LVIF-register is (b11 = 0) of een transport van
+	een aantal IF- of LVIF-registers naar het A- of S-register is
+	(b11 = 1). In beide gevallen worden de CHARON-registers bepaald
+	door bit 10 en 9.|"
+
+5.2. Het kerngeheugen.|"
+	In principe bevindt het gehele gesimuleerde kerngeheugen zich op
+	de trommel, en wel op de eerste (aantal kasten * 16384) plaatsen.
+	Om de efficientie van een geheugenacces te vergroten wordt de
+	meest recente inhoud van vier geheugentrajecten (in het programma
+	"regions" genaamd) in 4 _a_r_r_a_ys, m0, m1, m2 en m3 gehouden; deze
+	_a_r_r_a_ys zijn `bufs` woorden lang.
+	Het _a_r_r_a_y m0 bevat altijd de geheugenplaatsen 0 tot |?bufs - 1|?; het
+	programma neemt aan dat het D-register m0[63] is, de minimale
+	waarde van bufs is dus 64.|"
+	Bij elk geheugenacces wordt nagegaan of de gevraagde geheugenplaats
+	zich in een van de array`s m0, m1, m2 of m3 bevindt. Zo niet, dan
+	wordt nagegaan of een van de array`s nog nooit gebruikt is. Is dit
+	het geval, dan is de hele bij de geheugenplaats behorende "region"
+	nog nooit gebruikt, en kunnen we het vrije array aanwijzen als
+	bevattende de gevraagde geheugenplaats. Op deze manier wordt
+	bereikt dat een programma een aanzienlijk aantal geheugenplaatsen
+	kan gebruiken voordat het eerste trommeltransport optreedt.|"
+	Zijn alle array`s in gebruik, dan wordt nagegaan van welk array
+	het laatste geheugenacces het langst geleden is. De inhoud van dit
+	array wordt dan naar de trommel geschreven, en vervolgens wordt
+	het array vanaf de trommel gevuld met de "region" die het gevraagde
+	adres bevat.|"
+	Elk geheugenacces wordt geteld in een teller `m cnt`; de stand van
+	deze teller wordt opgeborgen bij het array waarin zich de gevraagde
+	geheugenplaats blijkt te bevinden.|"
+
+5.3. De geheugenprotectie.|"
+
+5.3.1. De protectietoestand en de besturingstoestand van de |?EL X8|? lopen
+	niet altijd parallel. Zo kan bijvoorbeeld CHARON geheugenplaatsen
+	uitlezen of beschrijven onafhankelijk van de waarde van BT; verder
+	geschiedt het halen van de opdracht die ten gevolge van een
+	ingreep uitgevoerd moet worden zonder geheugenprotectie, hoewel
+	BT nog steeds 0 kan zijn; zie ook 10.15.1. De geheugenprotectie is
+	daarom afhankelijk gesteld van een _b_o_o_l_e_a_n `prot` die aan het eind
+	van elke opdracht in overeenstemming gebracht wordt met de waarde
+	van BT, maar binnen de opdracht een eigen leven kan leiden; zie
+	bijvoorbeeld de opdracht SUBC.|"
+
+5.3.2. Op de |?EL X8|? behoort bij elke 4096 geheugenplaatsen een DP-register,
+	en bij elke 512 geheugenplaatsen een GP-register (zie Reference Manual A5.).
+	Als deze als _B_o_o_l_e_a_n _a_r_r_a_ys geimplementeerd zouden zijn, zou elk
+	geheugenacces twee delingen en twee _B_o_o_l_e_a_n array-indicering kosten.
+	Dit kan als volgt tot 1 deling en 1 _i_n_t_e_g_e_r array-indicering
+	teruggebracht worden.|"
+	Bij elke 512 geheugenplaatsen hoort een _i_n_t_e_g_e_r `dgp` die gelijk is
+	aan 2 * GP + DP - 1. Als GP = 1 (schrijven en lezen verboden) is dit
+	groter dan 0, als DP = 1 en GP = 0 (alleen schrijven verboden) is
+	dit 0, en als DP = GP = 0 (schrijven en lezen toegestaan) is dit
+	negatief. De vraag of een geheugenplaats tegen lezen beschermd is,
+	komt dus neer op de vraag of de bijbehorende dgp groter dan 0 is,
+	terwijl de vraag of een geheugenplaats tegen schrijven beschermd is,
+	neerkomt op de vraag of dgp groter dan 0 of gelijk aan 0 is. Dit
+	alles heeft wel tot gevolg dat de opdracht MEMPROT en de routine
+	voor het afdrukken van de DP`s en GP`s ingewikkelder worden.|"
+
+5.4. De kleine registers.|"
+	De inplementatie hiervan is behandeld in 4.3.2..|"
+
+5.5. De +0-preferentie.|"
+	Hoewel de numerieke processen in de |?EL X8|? -0-preferent zijn
+	(Reference Manual A4.1.2), is de adresaritmetiek +0-preferent (Reference Manual A3.8.1). In de
+	ALGOL 60-tekst wordt de +0-preferentie verkregen door |?a + b|?
+	te vervangen door -(-a-b).
+	Dit is echter alleen juist als niet |?a = b = -0|?. Bij de
+	adresberekeningen is echter eenvoudig vast te stellen dat een
+	van beide termen altijd positief (of +0) is.|"
+
+5.6. De vaste-komma-vermenigvuldiging en -deling.|"
+
+5.6.1. Bij de implementatie van de vaste-komma vermenigvuldiging
+	|?AS:= S * x + A|? worden de registers A en S en de operand x
+	beschouwd als getallen van twee cijfers met teken in het
+	8192-tallig stelsel, d.w.z.:|"|?
+
+			S = ts * (t * 2 ^ 13 + u)
+			x = tx * (y * 2 ^ 13 + z)
+			A = ta * (b * 2 ^ 13 + c)|?|"
+
+	waarin ts, tx en ta de tekens van S, x en A zijn. Verder geldt
+	dat |?0 _< (t, u, y, z, b, c) < 2 ^ 13|?.
+	De waarde van AS wordt nu:|"|?
+
+	AS = (ts * tx) * (t * y * 2 ^ 26 + (t * z + y * u) * 2 ^ 26 + u * z)
+			+ ta * (b * 2 ^ 13 + c) =
+			ts * tx * t * y * 2 ^ 26 +
+			(ts * tx * (t * z + y * u) + ta * b) * 2 ^ 13 +
+			(ts * tx * u * z + ta * c)|?|"
+
+	Het blijkt nu dat de tweede en de derde term samen, met inbegrip
+	van alle tussenresultaten kleiner is dan 2 ^ 40, en dientengevolge
+	exact door de drijvende-komma-aritmetiek van de |?EL X8|? berekend kan
+	worden. Voor de producten t * z, y * u en u * z geldt:|"
+
+	max (t * z) = max (y * u) = max (u * z) = (2 ^ 13 - 1) ^ 2 = 2 ^ 26|"
+		- 2 ^ 14 + 1|"
+
+	hetgeen kleiner is dan 2 ^ 40. Verder geldt:|"|?
+
+	P = max (t * z + y * u + b) = 2 ^ 26 - 2 ^ 14 + 1 + 2 ^ 26 - 2 ^ 14
+		+ 1 + 2 ^ 13 - 1 = 2 ^ 27 - 2 ^ 15 + 2 ^ 13 + 1 < 2 ^ 40.
+	Q = max (u * z + c) = 2 ^ 26 - 2 ^ 14 + 1 + 2 ^ 13 - 1 = 2 ^ 26 -
+		2 ^ 13 < 2 ^ 40.
+
+	Dit geeft voor de som van de tweede en de derde term:
+
+	P * 2 ^ 13 + Q =
+		2 ^ 40 - 2 ^ 28 + 2 ^ 26 + 2 ^ 13 + 2 ^ 26 - 2 ^ 13 =
+		2 ^ 40 - 2 ^ 27 < 2 ^ 40.|?|"
+
+	De waarden ts * t, ts * u, tx * y, tx * z, ta * b en ta * c kunnen
+	in ALGOL 60 verkregen worden door integer deling:|"|?
+
+			t:= s % tp13;   u:= s - t * tp13;
+			y:= x % tp13;   z:= x - y * tp13;
+			b:= a % tp13;   c:= a - b * tp13;
+
+	waarin tp13 2 ^ 13 is. De gevraagde term is dan:
+
+			(t * z + y * u + b) * tp13 + u * z + c|?|"
+
+	Dit kan onmiddellijk vereenvoudigd worden door b en c te elimineren:|"
+
+			(t * z + y * u) * tp13 + u * z + a|"
+
+	Dit kan herschreven worden tot:|"
+
+			t * z * tp13 + y * u * tp13 + u * z + a =|"
+			y * u * tp13 + (t * tp13 + u) * z + a =|"
+			y * u * tp13 + s * z + a|"
+
+	De grootheden u en z komen nog maar 1 keer voor en kunnen dus
+	gesubstitueerd worden:|"
+
+			(s - t * tp13) * y * tp13 + (x - y * tp13) * 3 + a|"
+
+	De vorm y * tp13 komt nu tweemaal voor en kan van te voren berekend
+	worden:|"
+
+			p:= y * tp13;
+			(s - t) * p + (x - p) * s + a|"
+
+	Van deze vorm kan nog steeds bewezen worden dat al zijn
+	tussenresultaten kleiner dan 2 ^ 40 zijn. Zouden we nu echter de
+	twee termen s * p tegen elkaar gaan wegstrepen, dan wordt het
+	tussenresultaat x * s groter dan 2 ^ 40.|"
+	De vaste-komma-vermenigvuldiging is in bovenstaande vorm
+	geimplementeerd, het berekenen van de hierboven besproken som
+	kost twee integer delingen, vier vermenigvuldigingen, vier
+	optellingen en aftrekkingen en vier assignments.|"
+
+5.6.2. In het  Reference Mannal A4. staat een algoritme
+	vermeld voor het bepalen van de tijdsduur van een
+	MULS/MULAS-instructie bij gegeven operand. In woorden
+	gezegd houdt deze algoritme het volgende in. De
+	geheugenoperand wordt van achteren af bit voor
+	bit `afgekalfd`, in principe 1 bit per cyclus;
+	echter, wanneer aan het eind van een cyclus blijkt
+	dat de bit voor de volgende slag gelijk is aan de
+	tekenbit (en er dus niets hoeft te gebeuren),
+	wordt deze bit nog tijdens de lopende cyclus afgewerkt.
+	Verder blijkt dat het aantal cycli alleen bepaald wordt
+	aan de hand van het al of niet gelijk zijn van bepaalde
+	bits aan de tekenbit; vermenigvuldigen met -x kost
+	dus precies evenveel tijd als vermenigvuldigen met +x.
+	We kunnen ons dan ook beperken tot 26-bits operanden
+	met een (impliciet) positief teken.|"
+	Bij een gegeven operand, b.v.|"
+
+			10111000110000110000011011|"
+
+	kunnen we nu aan de hand van bovenstaande algoritme
+	de indeling in cycli bepalen:|"
+
+			1 01 1 1 00 01 1 0 00 01 1 00 00 01 1 01 1|"
+
+	en de vermenigvuldiging kost dus 17 cycli.|"
+	Bij het efficient implementeren van deze algoritme doen
+	zich twee moeilijkheden voor. Ten eerste bevat de
+	oorspronkelijke algoritme nog de uitdrukkelijke clausule dat,
+	wanneer de algoritme stopt op bit 25, er nog een
+	cyclus uitgevoerd moet worden. Bij nader inzien is
+	deze clausule overbodig. Laten we de algoritme in
+	het geval van stoppen op bit 25, nog een slag uitvoeren,
+	dan wordt de vereiste cyclus vanzelf toegevoegd; weliswaar
+	stopt de algoritme dan op de niet-bestaande bit 27,
+	maar dat doet geen kwaad. Het loop-criterium moet
+	dus zijn `k < 26`; bit 25 en 26 behoeven dan geen bijzondere
+	behandeling.|"
+	De tweede moeilijkheid zit dieper. Bovenstaande algoritme
+	doorloopt het getal van rechts naar links; het is
+	programmatisch echter veel efficienter een getal van
+	links naar rechts af te tasten (delen door de grootste
+	_i_n_t_e_g_e_r en vervolgens voor elke bit vermenigvuldigen
+	met 2 en de entier nemen). Gevraagd dus deze algoritme
+	zo aan te passen dat het getal van links af ontleed wordt.|"
+	Het is duidelijk dat rechts van elke 1 een scheiding optreedt;
+	deze is ook van links af gemakkelijk genoeg te vinden.
+	Bij de nullen doet zich echter een schijnbaar onoplosbaar
+	probleem voor. Zoals uit het voorbeeld blijkt, begint
+	een even aantal nullen met een groep van _e_e_n nul,
+	een oneven aantal daarentegen met een groep van _t_w_e_e
+	nullen. Dit kan van links naar rechts uiteraard onmogelijk
+	ontdekt worden.
+	Anders gezegd, we kunnen van links naar rechts wel de groepen
+	1, 00 en 01 herkennen maar niet de groep 0. Echter, in
+	principe zijn we niet geinteresseerd in de indeling, maar
+	in het aantal groepen.
+	Het blijkt nu dat het herkennen van alleen 1, 00 en 01
+	genoeg is. Een oneven aantal nullen gevolgd door een
+	1, met als oorspronkelijke structuur b.v.|"
+
+			00 00 00 01|"
+
+	wordt van links naar rechts herkend als|"
+
+			00 00 00 01,|"
+
+	terwijl een even aantal nullen gevolgd door een 1, b.v.|"
+
+			0 00 00 01|"
+
+	herkend wordt als|"
+
+			00 00 00 1.|"
+
+	De algoritme luidt nu:|"
+     a.         Gooi de meest linkse bit weg.|"
+     b.         Als die bit een 0 was, gooi dan ook de volgende bit weg.|"
+     c.         Tel _e_e_n cyclus.|"
+     d.         Herhaal stap a t/m c tot alle bits op zijn.|"
+
+	In de echte implementatie is hierop nog een verfijning
+	aangebracht. Als stop-criterium wordt daar niet gebruikt
+	de vraag of alle bits op zijn, maar de vraag of
+	de overblijvende bits allemaal 0 zijn. Bij n overblijvende
+	0-bits moeten nog |?(n+1) % 2|? cycli uitgevoerd worden.|"
+
+5.6.3. De gedachtengang bij de implementatie van de vaste-komma-deling is
+	analoog aan die bij de vaste-komma-vermenigvuldiging.|"
+
+5.7. De schuif- en normeeropdrachten.|"
+	Een precieze beschrijving van de schuif- en normeeropdrachten is
+	te vinden in het Reference Manual A4.9.1 tot en met A4.9.3. Deze beschrijving
+	vat de registers op als _B_o_o_l_e_a_n _a_r_r_a_ys en gebruikt een aantal
+	_B_o_o_l_e_a_n hulparrays. Toepassing van deze implementatiemethode zou
+	resulteren in een zeer inefficient programma. Anderszijds bestond
+	er een |?ALGOL 60-programma|? dat de |?EL X8-schuifopdrachten|? met behulp
+	van integer deling en vermenigvuldiging zeer efficient simuleerde.
+	Dit programma bleek echter in een aantal gevallen onjuiste
+	resultaten te geven, in het bijzonder bij A = +0, A = -0, S = +0,
+	S = -0 bij n = 26 en n = 27. De fouten bleken inherent aan de
+	gevolgde methode.|"
+	Om een met redelijke zekerheid correct programma te kunnen
+	schrijven werden de volgende twee principes toegepast:|"
+     a. _v_o_o_r de schuifinstructie worden de tekenbits van de registers
+	verwijderd in overeenstemming met de aard van de schuifopdracht,
+	het schuiven zelf wordt gedaan door integer deling en
+	vermenigvuldiging en na de schuifopdracht worden de tekens
+	hersteld.|"
+     b. van elke optelling, aftrekking, deling en vermenigvuldiging
+	wordt bewezen dat de operanden groter dan of gelijk aan +0
+	zijn en kleiner dan 2 ^ 40, en dat het resultaat aan dezelfde
+	eisen voldoet (zie ook 5.5.).|"
+	Het onder a genoemde verwijderen van het teken kan op twee
+	manieren geschieden. Als de tekenbit meeschuift, dan wordt het
+	register opgevat als een positieve integer ter lengte van 27 bits,
+	met andere woorden: bit 27 wordt aritmetisch gemaakt; dit is
+	mogelijk omdat alle registers als _r_e_a_ls gedeclareerd zijn. De
+	omzetting geschiedt door de opdracht:|"
+
+			_i_f 1/x < 0 _t_h_e_n x:= x + 2 ^ 27 - 1|"
+
+	Dit laat b.v. +0 ongewijzigd maar verandert -0 in 2 ^ 27 - 1.
+	Bit 27 kan als tekenbit hersteld worden door de opdracht:|"
+
+			_i_f x _> 2 ^ 26 _t_h_e_n x:= x - (2 ^ 27 - 1).|"
+
+	Schuift de tekenbit daarentegen niet mee, dan wordt hij in een
+	_B_o_o_l_e_a_n opgeslagen en bit 27 wordt nul gemaakt:|"
+
+			negx:= 1/x < 0;|"
+			_i_f negx _t_h_e_n x:= x + 2 ^ 26 - 1|"
+
+	Dit laat +0 ongewijzigd maar verandert -0 in 2 ^ 26 - 1.
+	De oorspronkelijke tekenbit kan als volgt hersteld worden:|"
+
+			_i_f negx _t_h_e_n x:= x - (2 ^ 26 - 1).|"
+
+5.7.1. De schuifopdrachten zijn als volgt geimplementeerd.|"
+
+	LCA, LCS, RCA en RCS|"
+	Hiervoor wordt gebruik gemaakt van de in het Milli-systeem
+	aanwezige procedure `circ shift`.|"
+
+	LCAS, LCSA, RCAS en RCSA|"
+	De beide tekens worden aritmetisch gemaakt, de bits worden
+	verplaatst door integer deling en vermenigvuldiging, en de
+	tekens worden hersteld.|"
+
+	LUA en LUS|"
+	De bits worden verplaatst door integer deling en
+	vermenigvuldiging.|"
+
+	RUA en RUS|"
+	Deze zijn geprogrammeerd als een eenvoudige integer deling.|"
+
+	LUAS|"
+	De tekenbits van A en S worden nul gemaakt, de bits worden
+	verplaatst, de oude tekenbits van A en S worden hersteld en de
+	staart van S wordt met het tekenbit van A aangevuld.|"
+
+	LUSA|"
+	Bit 27 van A wordt aritmetisch gemaakt, dat van S wordt verwijdert,
+	de bits worden verplaatst, bit 27 van A wordt als tekenbit hersteld,
+	S krijgt zijn oude teken terug en de staart van A wordt met de
+	tekenbit van S aangevuld.|"
+
+	RUAS|"
+	Door een integer deling wordt de nieuwe waarde van A bepaald;
+	de tekenbits van de oude A en van S worden nul gemaakt waarna
+	een nieuwe waarde voor S berekend wordt. S krijgt dan zijn
+	oude tekenbit terug.|"
+
+	RUSA|"
+	Door een integer deling wordt de nieuwe waarde van S bepaald;
+	bit 27 van A wordt aritmetisch gemaakt, dat van S wordt nul
+	gemaakt, er wordt een nieuwe waarde van A berekend waarna bit 27
+	van A als tekenbit hersteld wordt.|"
+
+5.7.2. De normeeropdrachten worden als volgt verwezenlijkt.|"
+
+	NORA en NORS|"
+	De normering wordt uitgevoerd met behulp van de procedure
+	`normshift`.|"
+
+	NORAS|"
+	Het aantal plaatsen waarover geschoven moet worden, wordt met
+	`normshift` bepaald. Het schuiven zelf wordt daarna door de
+	opdracht LCAS gedaan.|"
+
+5.8. De drijvende-komma-opdrachten.|"
+	De drijvende-komma-opdrachten van de |?EL X8|? zijn direct in een
+	ALGOL 60-programma beschikbaar in de vorm van de operatoren +, -,
+	* en /. Hiervan wordt door de X8-simulator gebruik gemaakt.
+	Weliswaar wordt het programma hierdoor zeer machine-afhankelijk,
+	maar tegen het alternatief, het uitprogrammeren van de
+	drijvende-komma-opdrachten in bitmanipulaties, bestaan twee
+	bezwaren. Ten eerste staat de precieze werking van deze opdrachten
+	nergens in een toegankelijke vorm beschreven (is misschien echter
+	wel af te leiden uit de bij de |?EL X8|? behorende tijdsdiagrammen),
+	ten tweede zou zo`n implementatie zeer inefficient zijn.|"
+
+5.9. Het ingreepmechanisme.|"
+	De |?EL X8|? kent drie soorten ingrepen, de normale ingreep
+	(CHARON-ingreep), de foutingrepen en de sleutelingreep. In al deze
+	drie gevallen wordt buiten de gewone programma-opdrachten om een
+	opdracht uit een van de geheugenplaatsen M[24] t/m M[28]
+	uitgevoerd. Als deze opdracht een subroutinesprong is, wordt
+	deze op andere wijze uitgevoerd dan wanneer de subroutinesprong
+	op de gebruikelijke wijze aangeboden zou zijn; onder omstandigheden
+	is namelijk bit 24 van de weggeschreven link een 1, terwijl OV al 0
+	is. Het is dus noodzakelijk tijdens de uitvoering van een opdracht
+	te weten of deze opdracht afkomstig is van een ingreep of uit het
+	gewone verloop van het programma voortvloeit. Deze informatie wordt
+	door de variabele `ingreep type` verschaft en wel als volgt:|"|?
+
+			ingreep type    betekenis:
+				0       geen ingreep
+				1       CHARON/sleutelingreep
+				2       foutingreep
+				3       foutingreep tijdens
+						CHARON/sleutelingreep.|?|"
+
+	Hierbij moet opgemerkt worden dat tijdens een normale ingreep wel
+	een foutingreep kan optreden (het woord in M[24] kan imparitair
+	zijn), maar dat tijdens een foutingreep nooit een normale ingreep
+	kan optreden. Hoe dit ligt bij een sleutelingreep is niet duidelijk.|"
+	Bij het verwerken van een ingreep wordt eerst onderzocht of het
+	register ITV _t_r_u_e is; in dat geval wordt foutmelding 135 gegeven.
+	Het blijkt namelijk experimenteel dat het onder die omstandigheden
+	`undefined` is of tijdens de ingreepopdracht ITV nog steeds _t_r_u_e is.
+	Vervolgens wordt de geheugenprotectie opgeheven, zonder BT te
+	wijzigen; de opdracht wordt gehaald en verwerkt. Aan het eind van
+	elke opdracht wordt getest of `ingreep type` groter dan 0 is; is
+	dit het geval, dan was de laatste opdracht uitgevoerd ten gevolge
+	van een ingreep. Het register BT wordt dan _t_r_u_e gemaakt, en IV
+	_f_a_l_s_e; hiermee is de verwerking van een ingreep voltooid.|"
+
+	Het onderkennen van de situatie die tot een ingreep aanleiding
+	geeft, geschiedt als volgt.|"
+
+5.9.1. De normale ingreep.|"
+	Deze kan slechts optreden tussen twee opdrachten. Het onderzoek of
+	een ingreepmoet volgen, wordt gedaan na elke opdracht. Een normale
+	opdracht moet optreden als IV minstens een hele opdracht lang _t_r_u_e
+	is geweest, terwijl voor minstens 1 apparaat geldt dat zijn IF
+	_t_r_u_e is en zijn LVIF minstens een hele opdracht lang _t_r_u_e geweest
+	is. Dit houdt in dat we:|"
+     a.  de logische operaties op alle 40 IF`s en LVIF`s efficient
+    moeten kunnen uitvoeren, en|"
+     b.  informatie moeten bewaren omtrent de toestand van IV en de
+    LVIF`s aan het begin van de laatste opdracht, d.w.z. aan het
+	    eind van de een na laatste opdracht.|"
+
+	De een-bit registers AF(n), IF(n) en LVIF(n) zijn niet als
+	_B_o_o_l_e_a_n _a_r_r_a_ys geimplementeerd, maar als paren _i_n_t_e_g_e_rs. De
+	_i_n_t_e_g_e_rs if0 en if1 bevatten alle IF`s in hetzelfde formaat
+	als waarin ze door respectievelijk de machine-opdrachten IFA(0)
+	en IFA(1) afgeleverd worden; d.w.z. bits 25 t/m 18 van if0
+	bevatten IF(39) t/m IF(32), bits 17 t/m 0 van if0 bevatten IF(0)
+	t/m IF(17), bits 25 t/m 12 van if1 bevatten IF(18) t/m IF(31) en
+	bits 11 t/m 0 van if1 zijn 0. Hetzelfde geldt mutatis mutandis
+	voor AF, af0, af1 en LVIF, lvif0, lvif1. Dit maakt het weliswaar
+	moeilijker deze registers een waarde te geven (met _p_r_o_c_e_d_u_r_e setq)
+	of hun waarde uit te lezen (met _p_r_o_c_e_d_u_r_e readq), maar levert wel
+	de mogelijkheid op efficiente wijze na te gaan of aan de voorwaarden
+	voor een CHARON-ingreep voldaan is. Bijvoorbeeld kan de vraag of
+	voor minstens 1 apparaat zowel IF als LVIF _t_r_u_e zijn, aldus
+	geformuleerd worden:|"
+
+			and(if0, lvif0) + and (if1, lvif1) > 0.|"
+
+	Wat betreft de tweede eis, aan het eind van elke opdracht wordt
+	voor elk apparaat nagegaan of zowel IV als de LVIF van dat apparaat
+	_t_r_u_e zijn. Deze informatie wordt bewaard tot het eind van de
+	volgende opdracht; als dan voor enig apparaat dit nog steeds geldt,
+	terwijl bovendien zijn IF _t_r_u_e is, volgt een ingreep. De informatie
+	wordt opgeslagen in ie0 en ie1 in het hierboven beschreven formaat.
+	Het criterium voor een CHARON-ingreep is dan:|"
+
+	iv = 1 & and(ie0, and(if0, lvif0)) + and (ie1, and(if1, lvif1)) > 0.|"
+
+	Dit kost ongeveer 1300 mmsec, terwijl dezelfde test op basis van
+	_B_o_o_l_e_a_n _a_r_r_a_ys 18000 mmsec zou kosten, nog afgezien van het
+	samenstellen van het array `ie`.|"
+
+	Ten gevolge van een CHARON-ingreep wordt het woord in M[24] als
+	opdracht uitgevoerd; dit woord kan echter een foute pariteit
+	hebben. Deze uitzonderingstoestand wordt in de simulator
+	aangegeven door het feit dat `ingreep type` 3 is; voor de werking
+	op de |?EL X8|? zie echter 10.7.|"
+
+5.9.2. De foutingrepen.|"
+	De noodzaak van een foutingreep wordt op vele plaatsen in de
+	simulator vastgesteld; op deze plaatsen wordt dan de procedure
+	`undef` aangeroepen. Deze procedure heeft een _i_n_t_e_g_e_r parameter
+	die ontleed wordt in een foutnummer en een ingreepadres
+	(parameter = ingreep adres * 1000 + foutnummer).|"
+
+5.9.3. De sleutelingreep.|"
+	Een sleutelingreep wordt nooit door de |?EL X8|? zelf veroorzaakt
+	maar altijd door een `buitengebeuren`. De noodzaak van een
+	sleutelingreep wordt dan ook nooit door de simulator vastgesteld.
+	Wel wordt op de daarvoor geschikte plaatsen getest of de
+	_b_o_o_l_e_a_n variabele `key` _t_r_u_e is gemaakt door de monitor.
+	In dat geval volgt een sleutelingreep.|"
+
+5.10. CHARON.|"
+	Van CHARON zijn alleen de IP-opdracht en de AF-, IF- en
+	LVIF-registers geimplementeerd. Wel zijn faciliteiten aanwezig om
+	de simulator uit te breiden met (quasi-) asynchrone in- en uitvoer.
+	Zie hiervoor 6.1.|"
+	Tot het repertoire van het centrale rekenorgaan behoren opdrachten
+	voor het uitlezen en zetten van de CHARON-registers. De opdrachten
+	voor het uitlezen zijn zeer eenvoudig te implementeren omdat de
+	vorm waarin de CHARON-registers opgeborgen zijn, precies die is
+	waarin ze door genoemde instructies afgeleverd worden (zie 5.9.1.).
+	De IF- en LVIF-registers kunnen uitgelezen worden, de AF-registers
+	niet, zulks in overeenstemming met de beschrijving in Reference Manual A4.15.1
+	en in tegenspraak met de mondelinge overlevering.|"
+	Bij opdrachten voor het zetten van de CHARON-registers ligt de zaak
+	ingewikkelder. Bij de aanwezige apparaten kunnen zowel AF, IF als
+	LVIF aan en af gezet worden. Bij de niet-aanwezige apparaten blijkt
+	experimenteel dat sommige IF`s niet _t_r_u_e gemaakt kunnen worden en
+	sommige LVIF`s niet _f_a_l_s_e. Aangezien de AF`s niet uitgelezen kunnen
+	worden, is iets dergelijks daarvoor niet vast te stellen. Het feit dat
+	voor sommige niet-aanwezige apparaten IF niet _t_r_u_e gemaakt kan worden,
+	houdt in dat niet met elk niet-aanwezig apparaat een CHARON-ingreep
+	geforceerd kan worden. De werking van IF en LVIF staat voor alle 40
+	apparaten gespecificeerd in 10.4.|"
+	Naast de _i_n_t_e_g_e_rs af0, af1, if0, if1, lvif0 en lvif1 bestaan er zes
+	_i_n_t_e_g_e_rs afv0, afv1, ifv0, ifv1, lvifv0 en lvifv1 waarin van alle
+	registers aangegeven staat of het onderhavige register variabel is.
+	Wanneer de simulator een zet-opdracht te verwerken krijgt op een
+	niet-variabel register, wordt een foutmelding gegeven. Het variabel-zijn
+	van IF en LVIF werd bepaald in overeenstemming met de toestand op de
+	|?EL X8|? van het Mathematisch Centrum. Van alle AF`s wordt aangenomen
+	dat ze niet variabel zijn; dit weerspiegelt het feit dat geen enkel
+	in- of uitvoerproces geimplementeerd is. Het variabel-zijn van een
+	register kan in de simulator eenvoudig gewijzigd worden door in de
+	initialisatie in een string een 0 door een 1 te vervangen of
+	omgekeerd.|"
+
+5.11. De dynamische stoptoestand.|"
+	Deze toestand wordt gekarakteriseerd door het feit dat OT gelijk is
+	aan 2 ^ 18 - 1 of aan 2 ^ 18 - 2. Afgezien van operateurshandelingen
+	kan de machine maar op _e_e_n manier uit deze toestand komen, namelijk
+	door een CHARON-ingreep. Deze nu kan twee oorzaken hebben:
+	(a)  de sprong naar de dynamische stoptoestand werd met een
+	     GOTOR-opdracht gedaan die de machine horend maakte waardoor
+	     een reeds hangende ingreepconditie doorkomt, of
+	(b)  een asynchroon CHARON-proces wordt beeindigd waardoor een IF
+	     _t_r_u_e wordt.
+	Nu komt een ingreep pas als de voorwaarde ervoor minstens een hele
+	opdracht lang vervuld is (zie 5.9.1.). Daarom moet na een sprong
+	naar de dynamische stoptoestand nog minstens _e_e_n geskipte opdracht
+	uitgevoerd worden; is er na deze opdracht nog steeds geen ingreep
+	gekomen, dan is het wachten alleen nog op de beeindiging van een
+	CHARON-proces. Als er zo`n proces loopt, is `charon teller` groter
+	dan 0 (zie 6.1.); de voorgeschreven wachttijd wordt dan
+	verondersteld verstreken te zijn en CHARON wordt gewekt; hierdoor
+	kan dan weer een IF _t_r_u_e worden. Loopt er niet zo`n proces, dan
+	kan de (gesimuleerde) machine niet meer uit de dynamische
+	stoptoestand komen; er wordt dan een foutmelding gegeven met
+	foutnummer 1.|"
+|;
+
+_b_e_g_i_n   hoofdstuk:= 6; bladzijde:= 1 _e_n_d
+
+6.      _M_o_g_e_l_i_j_k_e_ _u_i_t_b_r_e_i_d_i_n_g_e_n_.|"
+
+6.1.    CHARON.|"
+6.1.1.  CHARON is een aparte computer die onafhankelijk van het CRO loopt
+	en als taak heeft de AF-registers te inspecteren, aan de hand
+	hiervan een apparaat te bedienen en als resultaat hiervan eventueel
+	een IF-register _t_r_u_e te maken. Het zou dus als apart programma
+	geimplementeerd moeten worden; parallelle programma`s kunnen echter
+	in ALGOL 60 niet geschreven worden en coroutines al evenmin.
+	We zijn dus gedwongen _o_f het CRO-programma _o_f het CHARON-programma
+	als hoofdprogramma te kiezen en het andere als procedure (of reeks
+	procedures). Uiteraard blijft het CRO-programma hoofdprogramma.
+	Het CHARON-programma moet nu minstens uit _e_e_n procedure bestaan,
+	die wordt aangeroepen als een van de AF-registers door het
+	hoofdprogramma gewijzigd wordt; deze procedure heet `attendeer
+	charon af`, en heeft 1 parameter, het apparaatnummer. Aan de hand
+	van dit apparaatnummer en waarschijnlijk van verdere informatie
+	uit de apparaatregisters kan nu een dienstregeling voor de te
+	verrichten handelingen opgesteld worden. Een heel eenvoudige
+	dienstregeling zou b.v. zijn, het gehele transport meteen af te
+	werken, inclusief wijzigingen in IFT, AFT, IF en AF. Voor een
+	meer realistische aanpak is het echter nodig een schatting te
+	maken van de tijd die voor het gevraagde transport benodigd zal
+	zijn, en pas na het verstrijken van die tijd, de wijzigingen in
+	IFT, AFT, IF en AF uit te voeren. Het verstrijken van die tijd
+	komt alleen tot uiting in het feit dat het hoofdprogramma verder
+	gaat en daardoor `ccs` (de geheugencyclus-teller) ophoogt. De
+	procedure `attendeer charon af` moet dus normaal terugkeren,
+	maar aan het hoofdprogramma de mededeling doen dat na een gegeven
+	aantal cycli het CHARON-programma weer even wil rekenen. Hiertoe
+	wordt het aantal benodigde cycli geassigneerd aan de variabele
+	`charon teller`; deze wordt door het hoofdprogramma telkens met
+	dezelfde bedragen afgelaagd als waarmee `ccs` opgehoogd wordt.
+	Wanneer aan het eind van een (CRO-)opdracht de `charon teller`
+	nul of negatief blijkt te zijn geworden, wordt de procedure
+	`wek charon` aangeroepen. Deze kan dan verdere administratieve
+	werkzaamheden verrichten.|"
+
+	Bij het simuleren van 1 apparaat komt maar 1 opdracht
+	tegelijkertijd voor en is het eenvoudig uit te zoeken waarom
+	`wek charon` werd aangeroepen. Bij het simuleren van meer dan
+	een apparaat is het echter aan te bevelen een lijst van
+	gebeurens (events) aan te leggen; elementen worden aan deze
+	lijst toegevoegd (niet noodzakelijkerwijze aan het eind) door
+	de procedure `attendeer charon af`, terwijl `wek charon` telkens
+	de eerste (voorste) verwerkt en verwijdert.|"
+
+	Bij een natuurgetrouwe implementatie van de CHARON-simulatie
+	moeten o.a. de volgende vragen beantwoord worden:|"
+     a. Wat doet CHARON precies met de apparaatregisters, in het
+	bijzonder, hoe worden AR3 en het adresdeel van AR2 gebruikt?
+	Wat gebeurt er als AFT meteen al 0 is? En wat als de bit 26 van
+	AR3 een 1 is?|"
+     b. Wat gebeurt er als een van de apparaatregisters een woord van
+	foute pariteit bevat? Wat gebeurt er als de werkruimte-registers
+	pariteitsfouten genereren (m.a.w. als ze door CHARON correct
+	beschreven worden, maar bij later teruglezen door CHARON een
+	woord van foute pariteit blijken te bevatten.)?|"
+     c. Wat gebeurt er als de leeswijzer naar een transportspecificatie
+	wijst die geheel of gedeeltelijk buiten het aanwezige geheugen
+	ligt (zowel bij de hoge als bij de lage adressen), of die geheel
+	of gedeeltelijk over de registers heen valt?|"
+     d. Wat gebeurt er als de transportspecificatie woorden van foute
+	pariteit bevat?|"
+     e. Wat gebeurt er als de transportspecificatie een traject
+	specificeert dat geheel of gedeeltelijk buiten het aanwezige
+	geheugen valt of dat over de registers heen ligt?|"
+     f. Wat gebeurt er als het te transporteren traject woorden van
+	foute pariteit bevat?|"
+     g. Wat zijn de mogelijkheden om de inhoud van woord M[0] te
+	transporteren (in verband met het opgeven van `eerste
+	transportadres - 1`)?|"
+
+	Alleen in geval f is het min of meer duidelijk dat de foutdetector
+	in actie zal komen.|"
+
+
+6.1.2.  In de huidige versie van de simulator is het effect
+	van `attendeer charon af(n)` een aanroep
+	van de _p_r_o_c_e_d_u_r_e master met `error number= 600 + n`.|"
+
+6.2.    De tijdmeting.|"
+	De bepaling van het aantal geheugencycli dat een opdracht kost,
+	is onvolledig.|"
+
+6.2.1.  Bij de drijvende-komma-opdrachten worden minimum- en maximum-
+	waarden aangegeven (zie 5.8.); de precieze waarden kunnen
+	echter berekend worden aan de hand van de beschrijvingen in
+	Reference Manual A4.17.2.|"
+
+6.2.2.  Bij alle adreshebbende opdrachten werd aangenomen dat de tijd
+	benodigd voor de opdracht opgebouwd is uit twee componenten, de
+	tijd benodigd voor het berekenen van het adres en het halen van
+	de operand en de tijd benodigd voor de opdracht zelf. Hierbij werd
+	aangenomen dat operanden van de types M[n], M[B+k], MR[q] en :MD[q]
+	een 1 geheugenacces nodig hebben (dus 2 cycli), die van de types
+	MD[q] en :Mp[q] twee geheugenaccessen (dus 4 cycli), die van het
+	type Mp[q] drie geheugenaccessen (6 cycli) terwijl operanden van
+	de types n (:STAT) en :MR[q] helemaal geen geheugenacces nodig
+	hebben.|"
+	Dit beeld is niet helemaal juist; de volgende gevallen wijken af:|"
+     a. Opdrachten van het type R = STAT of R = STATB zijn een cyclus
+	goedkoper indien de operand in een van de adressen 57 t/m 62
+	staat.|"
+     b. Opdrachten van het type R _+ :DYN zijn een cyclus duurder dan uit
+	het bovenstaande volgt.|"
+     c. Opdrachten van types F = _+ :STAT en F = _+ :DYN zijn twee cycli
+	goedkoper.|"
+     d. Opdrachten van het type F _+ x zijn een cyclus goedkoper indien de
+	exponenten van beide operanden beide + 0 zijn en nog eens een
+	cyclus wanneer x van type :STAT is.|"
+	Bovenstaande afwijkingen zijn niet geimplementeerd.|"
+|;
+
+_b kopje("") _e_n_d
+
+
+_b_e_g_i_n   hoofdstuk:= 7; breedte:= 75; bladzijde:= 1 _e_n_d
+
+7.      _L_i_j_s_t_ _v_a_n_ _f_o_u_t_m_e_l_d_i_n_g_e_n_.|"
+
+	De lijst bevat in de eerste kolom het nummer van de foutmelding,
+	in de tweede kolom eventueel het adres van de geheugenplaats die
+	uitgevoerd wordt, mocht de foutmelding als ingreep afgewerkt
+	worden, en in de derde kolom een verklaring van de fout.|"
+
+|?
+  0      zie 4.2.2.
+  1      het programma is in een dynamische stop geraakt
+  2      het toegestane aantal geheugencycli is overschreden
+  3      het toegestane aantal opeenvolgende DO/DOS-opdrachten
+	       is overschreden
+  4      zie 4.2.2.
+  5      zie 4.2.2.
+
+102      bij de opdracht DIVAS zijn A en S van verschillend teken
+103      bij de opdracht DIVA of DIVAS is de absolute waarde van A niet
+	       kleiner dan de absolute waarde van de operand
+120      bij een F / x opdracht treedt de deling 0 / 0 op
+121      bij een G / x opdracht treedt de deling 0 / 0 op
+130      in niet-bestuurtoestand wordt een van de instructies
+	       AFON, AFOFF, IFON, IFOFF, LVIFON, LVIFOFF aangeboden
+131      in niet-bestuurtoestand wordt de instructie IVON of IVOFF
+	       aangeboden
+132      in niet-bestuurtoestand wordt de instructie OVON of OVOFF
+	       aangeboden
+133      in niet-bestuurtoestand wordt de instructie ITVON aangeboden
+134      in niet-bestuurtoestand wordt de instructie MEMPROT aangeboden
+135      de opdracht volgend op de opdracht ITVON veroorzaakt een ingreep
+140      bij een schuifopdracht is het aantal plaatsen waarover geschoven
+	       moet worden kleiner dan 0 of groter dan 31
+141      bij een van de opdrachten IFA, IFAC, IFS, IFSC, LVIFA, LVIFAC,
+	       LVIFS, LVIFSC is de parameter niet 0 of 1
+142      bij een van de opdrachten AFON, AFOFF, IFON, IFOFF, LVIFON of
+	       LVIFOFF met B-modificatie is B negatief
+143      bij een van de opdrachten AFON, AFOFF, IFON, IFOFF, LVIFON of
+	       LVIFOFF is het apparaatnummer groter dan 39
+145      bij een opdracht voor het uitlezen van een CHARON-flip-flop-reeks
+	       deugt de flip-flop-aanduiding niet
+146      bij een opdracht voor het zetten van een CHARON-flip-flop
+	       deugt de flip-flop-aanduiding niet
+147      een AFON- of AFOFF-opdracht specificeert een niet-variabele AF
+148      een IFON- of IFOFF-opdracht specificeert een niet-variabele IF
+149      een LVIFON- of LVIFOFF-opdracht specificeert een niet-variabele
+	       LVIF
+
+151      bij het lezen van een octaal getal door de pseudo-opdracht OPERATE
+	       komt voor dit getal een cijfer voor
+152      een octaal getal dat door de pseudo-opdracht OPERATE ingelezen
+	       wordt, wordt niet met een apostrof afgesloten
+153      een door de pseudo-opdracht OPERATE ingelezen getal overschrijdt
+	       de integercapaciteit
+154      bij de uitvoering van een pseudo-opdracht OPERATE blijkt de code
+	       kleiner dan 0 of groter dan 15 te zijn
+155      bij de uitvoering van een pseudo-opdracht OPERATE blijkt de code
+	       gelijk te zijn aan 10
+156      bij de uitvoering van een pseudo-opdracht OPERATE blijkt de code
+	       gelijk te zijn aan 11
+160      een IP-band bevat een ponsing met een binaire waarde groter dan
+	       127
+161      het aangevraagde traject bij een dump bevat een niet-aanwezige
+	       geheugenplaats
+171      een BI-band bevat een heptade groter dan 63 en niet gelijk aan 127
+173      een BI-band bevat een woord van foute pariteit
+174      in een BI-band zijn de C1 en C2 van een inzetaanwijzing niet
+	       beide 0
+175      in een BI-band zijn de C1 en C2 van een geheugenwoord niet beide 1
+176      een BI-band bevat een woord dat in een van de registers of in een
+	       van de geheugenplaatsen M[0] tot M[23] ingezet moet worden
+
+200      opdracht begint met `65`
+201      opdracht begint met `74` of `75`
+202      onbekende opdrachtcode, ongeveer JUMP met Z- of E-variant
+203      onbekende opdrachtcode, ongeveer GOTO(-x)
+204      onbekende opdrachtcode, ongeveer GOTO met Z- of E-variant
+205      onbekende opdrachtcode, adresloos
+206      onbekende opdrachtcode, adresloos
+212      U-variant bij de opdracht CLP
+211      U-variant bij de opdracht TENS of TENAS
+213      U-variant bij een van de opdrachten AFON, AFOFF, IFON, IFOFF,
+	       LVIFON, LVIFOFF
+214      U-variant bij de opdracht IVON of bij de opdracht IVOFF
+215      U-variant bij de opdracht OVON of bij de opdracht OVOFF
+216      U-variant bij de opdracht ITVON
+217      U-variant bij de opdracht MEMPROT
+218      U-variant bij een schuifopdracht
+219      U-variant bij de opdracht NORAS
+222      U-variant bij de opdracht MULAS
+223      U-variant bij de opdracht MULS
+224      U-variant bij de opdracht DIVAS
+225      U-variant bij de opdracht DIVA
+226      U-variant bij de pseudo-opdracht OPERATE
+228      onbekende opdrachtcode, ongeveer U, F + :STAT
+229      onbekende opdrachtcode, ongeveer U, F = :STAT
+230      onbekende opdrachtcode, ongeveer U, F * :STAT of U, F / :STAT
+231      onbekende opdrachtcode, ongeveer U, :STAT + F
+232      onbekende opdrachtcode, ongeveer de pseudo-opdracht OPERATE
+
+304      bij een in-opdracht blijkt de geheugenoperand een register te zijn
+305      bij een uit-opdracht blijkt de geheugenoperand een register te
+	       zijn
+306      bij de opdracht x = A blijkt de geheugenoperand een register
+	       te zijn
+307      bij de opdracht x = S blijkt de geheugenoperand een register
+	       te zijn
+308      bij de opdracht x = B blijkt de geheugenoperand een register
+	       te zijn
+309      bij de opdracht x + A blijkt de geheugenoperand een register
+	       te zijn
+310      bij de opdracht x + S blijkt de geheugenoperand een register
+	       te zijn
+311      bij de opdracht x + B blijkt de geheugenoperand een register
+	       te zijn
+312      bij de opdracht x = G blijkt de geheugenoperand een register
+	       te zijn
+320  26  de adresberekening levert een negatief adres
+321  26  de adresberekening levert een positief niet bestaand adres
+322  26  bij een uit-opdracht is de geheugenoperand niet-aanwezig
+323  26  bij een  in-opdracht is de geheugenoperand niet-aanwezig
+330      bij een opdracht met MC-adressering wordt B negatief
+331      bij een F-opdracht met MC-adressering wordt B negatief
+332      bij een opdracht met Mp[q]-adressering is D kleiner dan 64
+333      het adres van een operand met DYN- of :DYN-adressering wijst
+	       een van de registers aan
+335      bij een opdracht met MC-adressering of bij de opdracht MEMPROT
+	       blijkt B niet positief te zijn
+336      bij een F-opdracht met MC-adressering blijkt B niet positief
+	       te zijn
+341      de operand van de opdracht G = x is M[57] (F-kop)
+342      de operand van een van de opdrachten G + x, G - x, G * x of G / x
+	       is M[57] (F-kop)
+343      de operand van een van de opdrachten GOTO(x), GOTOR(x), JUMP(x) of
+	       JUMPR(x) is M[62] (T)
+344      de operand van de opdracht SUBC(x) is M[62] (T)
+345      de operand van de opdracht DO(x) of DOS(x) is M[62] (T)
+350  26  het sprongadres van een van de opdrachten GOTO(x), GOTOR(x),
+	       JUMP(x) of JUMPR(x) is negatief
+351  26  het sprongadres van een van de opdrachten GOTO(x), GOTOR(x),
+	       JUMP(x) of JUMPR(x) is niet-aanwezig
+352  26  het sprongadres van een SUBC(x)-opdracht is negatief
+353  26  het sprongadres van een SUBC(x)-opdracht is niet-aanwezig
+354  26  het sprongadres van een REPn(x)-opdracht is niet-aanwezig
+355  26  het sprongadres van een SUBn(x)-opdracht is niet-aanwezig
+358  26  door de normale OT-ophoging gaat OT het adres van de eerste
+	       niet-aanwezige geheugenplaats bevatten
+361  26  het protectiewoord van een MEMPROT-opdracht verwijst naar een
+	       niet-aanwezige geheugenkast
+362  26  bij de opdracht SUBC(x) is B negatief
+363  26  bij een indirecte stapelende subroutinesprong is B gelijk aan +0
+
+400  25  pariteitsfout
+401  25  pariteitsfout in D bij een operand met MD-adressering
+402  25  pariteitsfout in D bij een operand met Mp[q]-adressering
+410  25  pariteitsfout in de teller bij een tellende sprongopdracht
+
+500  27  poging tot schrijven in een tegen schrijven beschermde
+	       geheugenplaats
+501  27  poging tot lezen uit een tegen lezen beschermde geheugenplaats
+502  27  bij een sprong door een protectiepoort is B < 256
+503  27  bij een SUBn-opdracht is de plaats van de LINK beschermd tegen
+		schrijven
+
+_b kopje("") _e
+
+_b_e_g_i_n   hoofdstuk:= 8; breedte:= 75; bladzijde:= 1 _e_n_d
+
+8. _H_e_t_ _p_r_o_g_r_a_m_m_a_.|"
+
+8.1.    Efficientie en geheugenbeslag.|"
+
+	De efficientie van de X8-simulator is in hoge mate afhankelijk
+	van de aangeboden opdrachten; zo zullen drijvende-komma-opdrachten
+	zeer goedkoop zijn, terwijl dubbele-lengte-schuifopdrachten naar
+	verhouding duur zullen zijn. Als richtlijn kan gelden dat de
+	ongeveer 215000 cycli van het in hoofdstuk 9 beschreven
+	testprogramma in ongeveer 435 seconden uitgevoerd worden; dit is
+	ongeveer 2 msec per cyclus, een factor 1600 langzamer dan de |?EL X8|?
+	zelf.|"
+	Voor de initialisatie zijn ongeveer 8 sec per geheugenkast nodig.|"
+	Het programma is ongeveer 21000 geheugenplaatsen groot (hiervan
+	12000 voor de X8-simulator, en 9000 voor het masterprogramma) en
+	heeft als werkruimte|"
+
+	935 + 1853 * aantal kasten + 4 * bufs + max master|"
+
+	geheugenplaatsen nodig. Bij een beschikbaar geheugen van ruim 40000
+	plaatsen, vier kasten en 512 geheugenplaatsen voor het
+	masterprogramma kan `bufs` ongeveer 3000 bedragen.|"
+
+8.2.    Gebruikte procedures.|"
+
+	De X8-simulator gebruikt de volgende procedures uit het
+	Milli-systeem (zie L.R. 1.1.).|"|?
+
+        abs                     fixt                    random
+        absfixt                 from drum               read
+        and                     head of                 rehep
+        bit                     line number             resym
+        bitstring               new page                set
+        circ shift              nlcr                    set random
+        col                     norm shift              sign
+        compose                 print                   space
+        cpunch                  print pos               string symbol
+        csym                    printtext               tail of
+        date                    prsym                   time
+        entier                  puhep                   to drum
+        even                    punch                   xor
+        exit                    pusym|?|"
+
+|;
+
+_b kopje("") _e
+
+_b_e_g_i_n hoofdstuk:= 9; breedte:= 75; bladzijde:= 1 _e_n_d
+
+9. _H_e_t_ _t_e_s_t_p_r_o_g_r_a_m_m_a_.|"
+
+9.1.    Het is buitengewoon moeilijk een omvangrijk programma als de
+	X8-simulator uitputtend te testen. Gedeeltelijk werd geprobeerd
+	door een enigszins orthogonale opbouw van het programma sommige
+	delen afzonderlijk testbaar te maken; zo is het adresseringsgedeelte
+	afzonderlijk geprogrammeerd, zodat uit het correct werken van b.v.
+	de opdrachten A + DYN en GOTO(STAT) geconcludeerd kan worden dat
+	ook GOTO(DYN) correct zal werken. Hierbij moet wel aangetekend
+	worden dat de |?EL X8|? niet volgens dit principe werkt; soms zijn
+	van _e_e_n opdracht vele adresvarianten als aparte pulsenrijen
+	uitgeprogrammeerd.|"
+	Verder werd gepoogd het aantal fouten laag te houden door zoveel
+	mogelijk gebruik te maken van rigoureus correcte redeneringen en
+	zo weinig mogelijk toe te geven aan de verleiding bepaalde stukken
+	"maar wat slimmer" te programmeren of om aan te nemen dat wat voor
+	drie voorbeelden goed gaat wel altijd goed zal gaan. (Zie 5.7.)|"
+	Tenslotte werd, om schrijffouten en eventueel andere fouten te
+	ontdekken, een testprogramma geschreven dat zoveel mogelijk elke
+	|?ALGOL 60-opdracht|? in de X8-simulator minstens eenmaal doet
+	uitvoeren. Van elke geteste situatie worden resultaten geponst;
+	door nu het testprogramma zowel op de |?EL X8|? als via de simulator
+	te verwerken en de aldus verkregen banden te vergelijken, kunnen de
+	werking van de |?EL X8|? en die van de simulator met elkaar vergeleken worden.|"
+	Bij het op deze wijze testen van de X8-simulator kwamen fouten aan het licht die in de volgende drie
+	klassen in te delen zijn:|"
+     a. programmeerfouten, voornamelijk vergeten initialisaties,|"
+     b. fouten in de |?EL X8|? (zie 10.3.3., 10.7. en 10.16.),|"
+	en de grootste klasse,|"
+     c. misvattingen over de precieze werking van de |?EL X8|?.|"
+	In de logische opzet werden geen fouten gevonden.|"
+
+	Het testprogramma test vrijwel het gehele opdrachtenarsenaal van
+	de |?EL X8|?, ook de meer bizarre varianten, en is van uitgebreid
+	commentaar voorzien; gezien ook de slechte toegankelijkheid van
+	de testprogramma`s van Electrologica en hun geringe leesbaarheid,
+	volgt daarom hieronder de tekst van het testprogramma. De lezer
+	moet zich daarbij wel realiseren dat het programma een programma
+	test en geen machine; hierdoor ontstaan de volgende opvallende
+	verschillen met een machinetest:|"
+     a. Een opdracht die _e_e_n keer goed gaat, gaat de volgende keer
+	   onder dezelfde omstandigheden weer goed; dit is bij een
+	   elektronische schakeling niet noodzakelijk. Het programma doet
+	   elke test dus slechts eenmaal.|"
+     b. Aangezien de processen in de X8-simulator en op de |?EL X8|? op
+	   verschillende wijze geimplementeerd zijn, schuilen de gevaren
+	   soms in verschillende hoeken. Zo is het verstandig bij de
+	   simulator te testen of +0 wel correct geanalyseerd wordt als
+	   zijnde de opdracht |?A + M[0]|?, terwijl zulks op de |?EL X8|? vanzelf
+	   spreekt.|"
+
+9.2. Tekst van het testprogramma.|"
+
+	Hierna volgt de tekst van het testprogramma, zoals vertaald door de
+	|?MC ELAN-assembler|? (zie MR132/72), gevolgd door de regeldrukkeroutput
+	welke de X8-simulator leverde bij het verwerken van het testprogramma.|"
+
+
+|;
+
+_b_e_g_i_n hoofdstuk:= 10; bladzijde:= 1 _e_n_d
+
+10. _D_e_t_a_i_l_t_e_s_t_s_ _o_p_ _d_e_ _E_L_ _X_8_.|"
+
+	Voor het schrijven van de X8-simulator bleek het nodig een aantal
+	kwesties aangaande de werking van de |?EL X8|? op te helderen. Soms
+	ontstonden de vragen door onduidelijke uitleg of ontbrekende
+	informatie in het Reference Manual, vaak ook rezen de vragen doordat bij het
+	draaien van het testprogramma (zie hoofdstuk 9) de |?EL X8|? anders
+	reageerde dan verwacht.|"
+
+	Hieronder volgt een lijst, in willekeurige volgorde, van tests die
+	gedaan werden om deze vragen te beantwoorden.|"
+
+10.1.   Volgens Reference Manual A4.9.1. zijn B-gemodificeerde schuifopdrachten over
+	meer dan 31 plaatsen ongedefinieerd. De uitgebreide beschrijving
+	(Reference Manual A4.9.2.) houdt in dat botweg over meer dan 31 plaatsen
+	geschoven wordt. Het gerucht wilde dat het CRO erdoor in een
+	"loop" raakt en de opdracht niet afmaakt.|"
+	Bij tests bleek dat telkens alleen de laatste 5 bits van de
+	schuifafstand beschouwd werden; geen van beide bovenstaande
+	effecten werd waargenomen.|"
+
+10.2.   De tekenbit van het T-register bevat een kopie van C. De link
+	die tijdens een subroutinesprong weggeschreven wordt, bevat
+	echter een nul als tekenbit. Nu is het bekend, dat, wanneer de
+	|?EL X8|? stopt op een subroutinesprong (b.v. ten gevolge van een
+	adresfout) het T-register, zoals dat uit de lampjes blijkt, als
+	tekenbit een nul bevat en geen kopie van C, m.a.w. het is de
+	link.|"
+	De vraag rijst nu of in de machine tijdens een subroutinesprong
+	T inderdaad de link bevat. De enige manier om T tijdens de sprong
+	te zien te krijgen, is de volgende. In M[26] (de adresfoutplaats)
+	wordt de opdracht |?S = T|? geplaatst;
+	vervolgens wordt een subroutinesprong met adresfout uitgevoerd
+	en wel wegens B negatief. De sprong wordt dan afgebroken nog
+	voor de link weggeschreven wordt, en inplaats ervan wordt
+	|?S = T|? gedaan. De aldus verkregen waarde van T bleek echter
+	wel degelijk in de tekenbit een kopie van C te bevatten.|"
+
+10.3.   Het samenspel tussen LP, C en de opdracht ITVON was onduidelijk
+	(zie Reference Manual A6.3.6.). Het volgende blijkt het geval te zijn.|"
+
+10.3.1. De volgende opdrachten zijn de enige die LP beinvloeden; LP
+wordt
+	gelijk aan de pariteitsbit (bij oneven pariteit) van de uit het
+	geheugen gehaalde operand.|"|?
+
+	R = _+ x                 A `*` x                 MULS(x)
+	R _+ x                   A `+` x                 MULAS(x)
+	x _+ R                   S `*` x                 DIVA(x)
+	PLUSR(x)                S `+` x                 DIVAS(x)
+	MINR(x)|?|"
+
+10.3.2. De volgende opdrachten zijn de enige die door ITV beinvloed
+	worden. De werking wordt hier gegeven voor het geval dat ITV
+	_t_r_u_e is.|"
+
+	R = _+ x|"
+	Als de operand van goede pariteit is, wordt C 0, en bij een foute
+	operand 1. In beide gevallen wordt het bitpatroon van de operand
+	in het register gehaald, en LP gelijk gemaakt aan de pariteitsbit
+	zoals dat uit het geheugen gekomen is.|"
+
+	R _+ x|"
+	Onafhankelijk van de pariteit van de operand wordt het bitpatroon
+	van de operand bij het register opgeteld (resp. van het register
+	afgetrokken), en LP gelijk gemaakt aan de pariteitsbit zoals dat
+	uit het geheugen gekomen is.|"
+
+	x = _+ R|"
+	Het bitpatroon uit het register wordt in het geheugen geschreven,
+	voorzien van een foute pariteitsbit.|"
+
+	x _+ R, PLUSR(x), MINR(x)|"
+	Als de geheugenoperand foute pariteit heeft, volgt een
+	pariteitsingreep als OV _t_r_u_e is, anders stopt de machine.
+	Als de geheugenoperand goede pariteit heeft, wordt LP gelijk
+	gemaakt aan de (goede) pariteitsbit, het rekenwerk gedaan en het
+	resultaat naar het geheugen geschreven, voorzien van een foute
+	pariteitsbit.|"
+
+10.3.3. Tijdens het testen bleek dat de |?EL X8|? bij een opdracht MULS(x) met
+	operand van foute pariteit in een "loop" raakt; de opdracht werd
+	niet afgemaakt. Deze hardware fout is inmiddels door Electrologica
+	hersteld.|"
+
+10.4.   Zoals in 5.10. al werd opgemerkt, kunnen niet alle IF`s _t_r_u_e
+	gemaakt worden, noch kunnen alle LVIF`s _f_a_l_s_e gemaakt worden.
+	Hieronder volgt een lijst van alle 40 IF`s en LVIF`s in de
+	volgorde waarin ze door het CRO uitgelezen kunnen worden. Een
+	* geeft aan dat het onderhavige register variabel is (d.w.z.
+	zowel _t_r_u_e als _f_a_l_s_e gemaakt kan worden), een - dat de waarde
+	vast is (_f_a_l_s_e voor IF, _t_r_u_e voor LVIF),|"|?
+
+	app.no.         IF          LVIF        apparaat
+
+	   39           *             *         klok
+	   38           *             *         reset
+	   37           *             *         foutdetector
+	   36           *             *
+	   35           *             -
+	   34           *             -
+	   33           -             -
+	   32           -             -
+	    0           *             *         bandlezer 1
+	    1           *             *         telex
+	    2           *             *         keyboard
+	    3           *             *         commandotelex
+	    4           *             *         keyboard commandotelex
+	    5           *             *         bandlezer 2, IP-lezer
+	    6           *             *         telex
+	    7           *             *         keyboard
+	    8           *             *         telex
+	    9           *             *         keyboard
+	   10           *             *         bandlezer 3
+	   11           *             *         regeldrukker
+	   12           *             *         PX-kanaal
+	   13           *             *         XP-kanaal
+	   14           *             -
+	   15           *             -
+	   16           *             *         keyboard
+	   17           *             *         telex
+
+	   18           *             *         bandponser 1
+	   19           *             *         bandponser 2
+	   20           *             *         bandponser 3
+	   21           *             *         plotter
+	   22           -             -
+	   23           -             -
+	   24           *             *         schijven
+	   25           *             *         kaartlezer
+	   26           *             *         kaartponser
+	   27           *             *         trommel
+	   28           *             *         magneetband eenheden
+	   29           *             *
+	   30           -             -
+	   31           -             -|?|"
+
+	Uit bovenstaande lijst blijkt dat nummers 36 en 29 de enige
+	niet-aanwezige apparaten zijn waarvan IF en LVIF naar behoren
+	werken.|"
+
+10.5.   In het Reference Manual A6.3.6. staat dat er "totdat de opdracht volgend op een
+	ITV-zetting is uitgevoerd, niet op ingrepen gereageerd wordt".
+	Dit is maar betrekkelijk waar; op CHARON-ingrepen wordt inderdaad
+	niet gereageerd, terwijl protectie-ingrepen niet op kunnen
+	treden aangezien de uitvoering van ITVON eist dat BT = _t_r_u_e.
+	Pariteits- en adres-ingrepen kunnen echter wel degelijk optreden.
+	Hier rijst dan de vraag of de ten gevolge van de ingreep
+	uitgevoerde opdracht nog wordt uitgevoerd met ITV = _t_r_u_e. Bij
+	experimenten bleek dit bij pariteitsingrepen telkens niet het
+	geval te zijn, terwijl bij adresingrepen het gedrag grillig was;
+	soms werd dan de opdracht in M[26] wel met ITV = _t_r_u_e uitgevoerd.
+	Zie verder 5.9.|"
+
+10.6.   De |?EL X8|? heeft drie opdrachten die impliciet B ophogen, t.w. de
+	uit-opdrachten met MC-adressering, de stapelende subroutinesprong
+	en de opdracht MEMPROT. Bij positieve B is de werking duidelijk,
+	bij negatieve B is de werking volgens het Reference Manual ongedefinieerd.|"
+	Experimenteel blijkt het volgende:|"
+     a. Bij uit-opdrachten met MC-adressering (b.v. |?B = -10|?, |?MC[11] = A)|?
+	wordt ook een negatieve B met 1 opgehoogd, tenzij B = -0, welke dan
+	overgaat in +0.|"
+     b. Bij de SUBC-opdracht met B _< -0 volgt een adresingreep.|"
+     c. Bij de opdracht MEMPROT geeft B < -0 een adresingreep terwijl
+	voor B = -0 het woord M[0] gebruikt wordt en B de waarde +0 krijgt.|"
+	De ophoging van B geschiedt dus kennelijk zonder `end-around-carry`.|"
+
+10.7.   Een pariteits-, adres- of protectie-ingreep kan alleen optreden
+	als OV _t_r_u_e is. In de link die tengevolge van de subroutinesprong
+	weggeschreven wordt, is bit24 dus altijd _t_r_u_e en draagt als zodanig
+	geen informatie. de bit kan daarom gebruikt worden om antwoord te
+	geven op een vraag die in het ingreep-programma gesteld moet worden,
+	namelijk: "Is deze ingreep ontstaan door een fout van het lopende
+	programma of doordat het lopende programma door een CHARON-ingreep
+	onderbroken werd en de opdracht in M[24] de foutingreep
+	veroorzaakte?".
+	Uit de beschrijving in het Reference Manual A6.3.3. blijkt inderdaad dat in de
+	weggeschreven link de notitie OV = _f_a_l_s_e wordt gemaakt indien "de
+	foutingreep is opgetreden tijdens de honorering van een CHARON-
+	of operateurs-ingreep". Dit gebeurt echter niet. Deze fout is niet
+	door Electrologica hersteld.|"
+
+10.8.   Bij het lezen van de beschrijving van de opdracht DOS(x) rijst de
+	vraag, wat DOS(S) doet. Het antwoord is conform de beschrijving:
+	het adres van de operand (d.w.z. 60, zijnde het adres van S) wordt
+	in S gehaald, waarna de operand, S, wordt uitgevoerd. Het getal 60
+	wordt dus als opdracht, d.w.z. als |?A + M[60]|? uitgevoerd. M[60] is
+	echter weer S en bevat 60; het totaaleffect is dus:|"|?
+
+		S = 60
+		A + 60|?|"
+
+	Uit de tijdsdiagrammen die bij de |?EL X8|? behoren blijkt dat de
+	stappen inderdaad met zekerheid in de hierboven genoemde volgorde
+	uitgevoerd worden.|"
+
+10.9.   De opdracht U,GOTO(x) heeft als eigenschap dat tijdens de sprong
+	OF _f_a_l_s_e gemaakt wordt. Als x een woord van foute pariteit is,
+	wordt de sprong ergens middenin afgebroken en volgt een ingreep.
+	Volgens het Reference Manual A5.2.3. is het "undefined" tot hoever de opdracht
+	heeft plaats gehad. Inderdaad blijkt dat bij de opdracht
+	U,GOTO(woord van foute pariteit) OF soms wel en soms niet
+	"gecleard" wordt.|"
+	Iets dergelijks zou ook moeten gelden voor de in-opdrachten met
+	MC-adressering waarbij de geheugenoperand van foute pariteit is;
+	hierbij zou B ook soms wel en soms niet afgelaagd moeten zijn.
+	Dit effect werd niet waargenomen; B behield altijd zijn oude
+	waarde.|"
+
+10.10.  De werking van ITV beperkt zich tot de volgende opdracht. De
+	verwachting is, dat wanneer dit een DO-opdracht is, ITV ook zal
+	gelden voor de hierdoor uitgevoerde opdracht, enzovoort. Dit
+	blijkt inderdaad zo te zijn.|"
+
+10.11.  Van een aantal opdrachten wordt in het Reference Manual niet aangegeven hoe
+	lang ze duren. De ontbrekende tijden zijn in de volgende lijst
+	te vinden.|"|?
+
+		snelle registertransporten              2.5  mmsec
+		IFA, IFS, IFAC, IFSC, etc.              3.75 mmsec
+		IFON(n) etc.                            3.75 mmsec
+		OVON, OVOFF, IVON, IVOFF                2.5  mmsec
+		ITVON                                   2.5  mmsec
+		MEMPROT                                 7.5  mmsec|?|"
+
+10.12.  Uit de beschrijving van de afhandeling van een foutingreep
+	(zie Reference Manual A6.3.3.) blijkt dat OV _f_a_l_s_e gemaakt wordt _v_o_o_r_d_a_t de
+	ingreepopdracht uitgevoerd wordt, terwijl de beinvloeding van
+	BT en IV _e_r_n_a komt. Dit houdt in dat, wanneer de ingreepopdracht
+	b.v. |?S = T|? is, uit de inhoud van S moet blijken dat OV al een
+	nieuwe waarde heeft terwijl IV en BT nog de oude waarden hebben.
+	Dit werd experimenteel bevestigd.|"
+	Door uit te gaan van de niet-bestuurstoestand (dus |?BT = _f_a_l_s_e|?,
+	|?OV = IV = _t_r_u_e)|? kunnen we zo de machine in een (pathologische)
+	toestand krijgen waarbij |?BT = _f_a_l_s_e|? niet impliceert dat
+	|?OV = IV = _t_r_u_e|? (hetgeen normaal altijd wel het geval is).|"
+
+10.13.  Conform de beschrijving (Reference Manual A5.2.2.c) treedt een protectie-ingreep
+	op als in de niet-bestuurstoestand een sprong door een
+	protectiepoort wordt uitgevoerd terwijl |?+0 _< B < 256|?. Hoewel dit
+	duidelijk met opzet gedaan is, blijkt de zin hiervan moeilijk te
+	doorgronden. De twee meest voor de hand liggende redenen zijn
+	onjuist.|"
+     A. Het zou gedaan zijn om de apparaatregisters te beschermen.|"
+	Echter, elk zinnig protectiesysteem werkt toch al met gedeeltelijke
+	of gehele protectie op de eerste 512 geheugenplaatsen.|"
+     b. Het zou gedaan zijn omdat tijdens de sprong de
+	geheugenprotectie wordt opgeheven. Dit geldt echter beslist
+	niet voor het wegschrijven van de link.|"
+
+	Drie andere redenen klinken plausibeler:|"
+     c. Stel B zou kleiner zijn dan 16, dan kan de link wel weggeschreven
+	worden en naar alle waarschijnlijkheid over belangrijke
+	informatie. Het is nu echter niet duidelijk waarom de test
+	|?B < 256|? luidt en waarom de gebruiker de plaatsen 0 tot 15 die
+	tot het gebruikersprogramma behoren, niet mag gebruiken zoals hem
+	dat goeddunkt.|"
+     d. Stel dat B tussen 57 en 62 zou liggen, dan zou de link verloren
+	gaan, terwijl bij de terugsprong uit het systeem naar het
+	gebruikersprogramma de kleine registers en OT met onvoorspelbare
+	waarden gevuld zouden worden wat duidelijk ongewenst is.|"
+     e. Ook het systeem heeft voor het afhandelen van de
+	protectiepoortroutines een stack nodig. Verder zullen een
+	aantal protectiepoortroutines op hun beurt weer andere
+	protectiepoortroutines aanroepen; bij een aanroep door het
+	gebruikersprogramma zullen meegegeven parameters nauwkeurig
+	op toelaatbaarheid getest moeten worden, terwijl bij een
+	aanroep vanuit een andere protectiepoortroutine deze test
+	achterwege kan blijven. Wordt de systeemstack nu in een van
+	de trajecten M[29] tot M[56] of M[224] tot M[255] gekozen,
+	dan blijkt uit de waarde van B na de aanroep onmiddellijk
+	of de aanroep gedaan werd door het gebruikersprogramma
+	|?(B _> 256)|? of door een ander protectiepoortprogramma |?(B < 256)|?.|"
+	Het is bij deze verklaring echter niet duidelijk waarom een
+	protectiepoortroutine die een andere wil aanroepen dit niet
+	kan doen op een punt waar alle tests al gedaan zijn.|"
+
+10.14.  Uit de beschrijving van de opdracht MEMPROT (Reference Manual A5.2.5.) blijkt
+	dat de operand met een M[B]-adressering gehaald wordt (hoewel de
+	bitconfiguratie van de opdracht een MC-operand aanduidt).
+	Hieruit zou volgen dat de operand een van de registers mag zijn.
+	Dit werd experimenteel bevestigd.|"
+
+10.15.1. Uit de beschrijving van de sprong door een protectiepoort
+	(Reference Manual A5.2.4.) zou blijken dat gedurende het halen van de operand
+	BT _t_r_u_e zou zijn. Treedt er dus bij het halen van de operand een
+	pariteitsingreep op, dan wordt in de link BT = _t_r_u_e genoteerd
+	waaruit ten onrechte de conclusie getrokken zou kunnen worden
+	dat de instructie die aanleiding was tot de protectie-ingreep,
+	d.w.z. de subroutinesprong, in de bestuurstoestand uitgevoerd
+	was.|"
+	Bovenstaand effect werd experimenteel niet gevonden; het blijkt
+	dat tijdens het halen van de operand de geheugenprotectie
+	uitgeschakeld wordt zonder BT te beinvloeden.|"
+
+10.15.2. Uit dezelfde beschrijving blijkt dat de hoofdfunctie is, OT, BT
+	en IV nieuwe waarden te geven. Het nieuwe adres dat in OT gezet
+	moet worden kan echter niet-aanwezig of niet-bestaand zijn, in
+	welk geval er een adresingreep optreedt. Het blijkt dan
+	experimenteel dat het "undefined" is of de wijzigingen in BT en
+	IV al plaats gehad hebben. Misschien is het zo zelfs mogelijk de
+	machine in de (pathologische) toestand BT = IV = _f_a_l_s_e te
+	krijgen, hoewel dit met een beperkt aantal malen proberen niet
+	lukte.|"
+
+10.15.3. Uit het voorgaande blijkt dat het protectiepoortentraject geen
+	woorden mag bevatten, die, als adres opgevat, een fout adres
+	zouden zijn; de gebruiker zou dan namelijk een adresingreep
+	kunnen veroorzaken met een onontwarbare link. Het traject moet
+	dus gevuld worden met de adressen van de routines en alle
+	sprongen door een protectiepoort moeten inhoudelijke sprongen
+	(STAT, STATB of DYN) zijn. Niets weerhoudt de gebruiker echter
+	om met een directe sprong (:STAT of :DYN) door een protectiepoort
+	te springen; de opeenvolgende adressen in het traject worden
+	dan als opdrachten uitgevoerd (met BT = _t_r_u_e) en wel als
+	|?A + M[adres]-opdrachten|?. Dit kan geen kwaad, wel moet M[320] dan
+	een sprong naar een foutmeldingsroutine bevatten.|"
+
+10.16.  Het bleek experimenteel dat een inhoudelijke stapelende
+	subroutinesprong (d.w.z. SUBC(STAT), SUBC(STATB) of SUBC(DYN))
+	met B = +0 een adresingreep veroorzaakt; dit effect treedt niet
+	op bij een directe stapelende subroutinesprong (d.w.z. SUBC(:STAT)
+	of SUBC(:DYN)) met B = +0. Zulks wordt bevestigd door de bij de
+	|?EL X8|? behorende tijdsdiagrammen; de reden hiervan is onbekend.|"
+
+10.17.
+	De besturing van de |?EL X8|? heeft 4 statusvariabelen, de besturingstoestand,
+	de ingreepvergunning, de onderzoekvergunning en de CRO-toestand (DYST1/2 versus
+	lopend); de laatste is geimplementeerd als een bijzondere bitconfiguratie in OT,
+	de andere zijn elk _e_e_n bit. Met deze 4 variabelen (en even afziende
+	van het verschil tussen DYST1 en DYST2) kunnen we 16 combinaties maken.|"
+|?
+	  BT  IV  OV  DYST
+
+	   1   1   1   ja    het systeem wacht
+	   1   1   1   nee   het systeem loopt
+	   1   1   0   ja    begintoestand (IP, NB)
+	   1   1   0   nee   systeeminitialisatie
+
+	   1   0   1   ja    ???
+	   1   0   1   nee   het systeem loopt, doof
+	   1   0   0   ja    ???
+	   1   0   0   nee   na inlezen IP-band, enz.
+
+	   0   1   1   ja    ???
+	   0   1   1   nee   een gebruikersprogramma loopt
+	   0   1   0   ja    ---
+	   0   1   0   nee   tijdens foutingreep in gebruikersprogramma
+
+	   0   0   1   ja    ---
+	   0   0   1   nee   ---
+	   0   0   0   ja    ---
+	   0   0   0   nee   ---|?|"
+
+	Vijf van deze combinaties kunnen niet optreden, _e_e_n komt slechts in een bijzonder
+	geval kortstondig voor, en drie werpen vragen op. Twee daarvan
+	behelzen de toestand waarbij de machine in doofheid in DYST geraakt;
+	in principe is de machine daardoor in een statische stop geraakt:
+	alleen de operateur kan nog iets doen. De derde twijfelachtige toestand
+	is die waarbij een gebruikersprogramma (in de niet-besturingstoestand)
+	al dan niet opzettelijk in DYST geraakt; hierdoor ontstaat een voor de operateur
+	misleidende en voor de gebruikers onprofijtelijke situatie.|"
+|;

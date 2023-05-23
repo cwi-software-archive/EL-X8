@@ -1,0 +1,2359 @@
+'begin' 'comment' x8 simulator: 17-12-71;
+
+  'int' aantal kasten, max addr, bufs, max master;
+  aantal kasten:= 4;
+  bufs:= 3000;
+  max master:= 512;
+  max addr:= aantal kasten * 2 ** 14 - 1;
+
+'bgn'
+  'real' fh, ft, a, s, b, ot, c, iv, lt, of, last par word,
+	 nint, ov, bt, or, m, addr, cg, itv, ingreep type, dyst stat;
+
+  'co' ingreep type   betekenis:
+	    0	      geen ingreep
+	    1	      charon/sleutelingreep
+	    2	      foutingreep
+	    3	      foutingreep tijdens charon/sleutelingreep   ;
+
+  'real' val, valh, valt, ah, at, sh, st, hulp1, hulp2, hulp3;
+  'bool' addrop, regop, memop, mcaddr, flag, nega, negs, subcd, gate,
+	 prot;
+
+  'switch' dsw:= basis cyclus 1;
+									x8s00006
+  'int' 'proc' randbit; randbit:= random;
+
+  'int' 'proc' randint;
+  'bgn' 'real' x;
+      x:= entier((entier(random * tp13) + random) * tp14);
+      randint:= 'if' x 'ge' tp26 'then' x - tp27m1 'else' x
+  'end' randint;
+
+  'proc' init x8;
+  'bgn'
+    fh:= randint; ft:= randint; a:= randint; s:= randint; b:= randint;
+    ot:= and(randint, tp18m1); or:= randint;
+    c:= randbit; iv:= randbit; lt:= randbit; of:= randbit;
+    last par word:= randint; nint:= randbit; ov:= randbit; bt:= randbit;
+    m:= addr:= cg:= itv:= ingreep type:= dyst stat:= 0;
+    prot:= bt = 0
+  'end' init x8;
+
+  'proc' memreg;
+  'if' mem op 'then' mem1 'else'
+  'bgn' m:= 'if' addr < 59 'then'
+	   ('if' addr = 57 'then' fh 'else' ft) 'else'
+	    'if' addr < 61 'then'
+	   ('if' addr = 59 'then' a 'else' s) 'else'
+	    'if' addr = 61 'then' b 'else'
+		   tlink + ('if' c = 0 'then' 0 'else' -tp26m1)
+  'end' memreg;
+
+  'real' 'proc' compf(h,t); 'val' h,t; 'real' h,t;
+  compf:= compose(h,set(bit(14, h), 26, 26, t));
+
+  'bool' 'proc' signinc;
+  signinc:= bit(14, valh) 'ne'
+	   ('if' 1/valt > 0 'then' 0 'else' 1);
+
+  'proc' b up1;
+  'bgn' 'if' 1/b < 0 'then' undef(335); b:= b + 1 'end' b up1;
+
+  'proc' bdown1;
+  'bgn' b:= -(1 - b); 'if' b < 0 'then' undef(330) 'end' bdown1;
+
+  'proc' b up2;
+  'bgn' 'if' 1/b < 0 'then' undef(336); b:= b + 2 'end' b up2;
+
+  'proc' bdown2;
+  'bgn' b:= -(2 - b); 'if' b < 0 'then' undef(331) 'end' bdown2;
+
+  'real' 'proc' star(x); 'val' x; 'real' x;
+  'bgn' 'co' only for abs(x) > tp18m1;
+    y:= x - x '/' tp18 * tp18;
+    star:= 'if' y = 0 { x > 0 'then' 0 'else' y
+  'end' star;
+
+  'real' 'proc' tlink;
+  tlink:= ot +
+    ('if' c  = 0 'then' 0 'else' tp18) +
+    ('if' iv = 0 'then' 0 'else' tp19) +
+    ('if' lt = 0 'then' 0 'else' tp20) +
+    ('if' of = 0 'then' 0 'else' tp21) +
+    ('if' parbit(last par word) = 0 'then' 0 'else' tp22) +
+    ('if' nint = 0 'then' 0 'else' tp23) +
+    ('if' ov = 0 'then' 0 'else' tp24) +
+    ('if' bt 'ne' 0 'then' 0 'else' tp25);
+
+  'proc' calc addr;
+  'bgn' mcaddr:= 'false';
+    'if' b20c19 < 3 'then'
+    'bgn' 'co' stat, :stat, statb;
+      'if' b20c19 < 2 'then'
+      'bgn' addr:= b14t0; addrop:= b20c19 = 1 'end' 'else'
+      'bgn' addrop:= 'false';
+	addr:= ('if' abs(b) > tp18m1 'then' b - b '/' tp18 * tp18
+				     'else' b) + b14t0 - tp14
+      'end';
+      reg op:= ~addrop { addr > 56 { addr < 63
+    'end' 'else'
+    'bgn'
+      b14t9:= b14t0 '/' tp9; b8t0:= b14t0 - b14t9 * tp9;
+      'if' b14t9 > 57 'then'
+      'bgn' 'co' mr;
+	'if' b14t9 = 63 'then'
+	'bgn'
+	  'if' ~filled[63] 'then' undef(25401);
+	  x:= m0[63]; ccs:= ccs + 2;
+	  'if' trace 'then' report reading(63, x);
+	'end' 'else'
+	  x:= 'if' b14t9 < 61 'then'
+	    ('if'  b14t9 = 58 'then' ft 'else'
+	     'if'  b14t9 = 59 'then'  a 'else' s) 'else'
+	     'if'  b14t9 = 61 'then'  b 'else' ot
+      'end' mr 'else'
+      'bgn' 'co' mpq;
+	'if' ~filled[63] 'then' undef(25402);
+	y:= m0[63]; ccs:= ccs + 2;
+	'if' trace 'then' report reading(63, y);
+	'if' abs(y) > tp18m1 'then' y:= y - y '/' tp18 * tp18;
+	'if' y < 64 'then' undef(332);
+	cg:= 0; addr:= y + b14t9; mem1; x:= m;
+      'end' mpq;
+      addr:= ('if' abs(x) > tp18m1 'then' x - x '/' tp18 * tp18
+				   'else' x) + b8t0 - tp8;
+      'if' addr > 56 { addr < 63 'then' undef(333); reg op:= 'false';
+      addrop:= b20c19 = 4;
+      mcaddr:= b14t9 = 61 { ~addrop
+    'end' dyn, :dyn;
+    'if' addr < 0 'then' undef(26320) 'else'
+    'if' addr = 0 'then' addr:= 0 'else'
+    'if' addr > tp18m1 'then' undef(26321);
+    mem op:= ~ (addrop } reg op)
+  'end' calc addr;
+
+  'proc' condf;
+  'bgn' 'co' conditiezetting op floating point getal
+	     in valh en valt;
+    x:= bit(14, valh);
+    c:=
+      'if' b18c17 = 1 'then' x 'else'
+      'if' b18c17 = 2 'then'
+       ('if' valt 'ne' 0 'then' 1 'else'
+	'if' and(valh, tp14m1)=('if' 1/valt > 0 'then' 0 'else' tp14m1)
+	  'then' 0 'else' 1) 'else'
+      'if' lt = x 'then' 0 'else' 1;
+    lt:= x
+  'end' condf;
+
+  'proc' cond;
+  'bgn' 'co' conditiezetting op 27-bits woord in val;
+    x:= 'if' ('if' val = 0 'then' 1/val 'else' val) > 0
+	'then' 0 'else' 1;
+    c:= 'if' b18c17 = 1 'then' x 'else'
+	'if' b18c17 = 2 'then' ('if' val = 0 'then' 0 'else' 1) 'else'
+	'if' lt = x 'then' 0 'else' 1;
+    lt:= x
+  'end' cond;
+
+'co' begin pariteitsberekening;
+
+  'integer' 'array' parlist[0:511];					x8s00243
+									x8s00244
+  'integer' 'procedure' parbit(bin); 'value' bin; 'real' bin;		x8s00245
+  'begin' 'real' x, y;
+    'if' ('if' bin = 0 'then' 1/bin 'else' bin) < 0 'then'
+      bin:= bin + tp27m1;
+    x:= bin '/' 512; y:= x '/' 512;					x8s00247
+    x:= parlist[bin - x * 512] + parlist[x - y * 512] + parlist[y] + 1; x8s00248
+  rep:
+    'if' x > 1 'then' 'begin' x:= x - 2; 'goto' rep 'end' _m_o_d 2;
+    parbit:= x								x8s00251
+  'end' parbit;							x8s00252
+									x8s00253
+  'proc' init parlist;							x8s00254
+  'begin' 'int' i,j;							x8s00255
+    parlist[0]:= 0;							x8s00256
+    'for' i:= 1, i + i 'while' i 'le' 256 'do'
+    'for' j:= 0 'step' 1 'until' i - 1 'do'
+    parlist[i+j]:= 1 - parlist[j]					x8s00259
+  'end' init parlist;							x8s00260
+
+'co' einde pariteitsberekening;
+									x8s00261
+'co' begin memory simulation;						x8s00011
+									x8s00012
+  'proc' bring in(region); 'real' region;
+  'if' m3p = 0 'then'
+  'bgn' 'if' m2p = 0 'then'
+    'bgn' 'if' m1p = 0 'then'
+      'bgn' m1p:= region; m1l:= m cnt 'end' 'else'
+      'bgn' m2p:= region; m2l:= m cnt 'end'
+    'end' 'else'
+    'bgn' m3p:= region; m3l:= m cnt 'end'
+  'end' unused regions 'else'
+  'bgn'
+
+    'proc' transp(m, mp); 'int' mp; 'int' 'ar' m;
+    'bgn'
+      to drum(m, mp * bufs);
+      mp:= region; drum cnt:= drum cnt + 1;
+      from drum(m, mp * bufs)
+    'end' transp;
+
+    'if' m1l > m2l 'then'
+    'bgn'
+      'if' m2l > m3l 'then' transp(m3, m3p)
+		     'else' transp(m2, m2p)
+    'end' m2 of m3 'else'
+    'if' m1l > m3l 'then' transp(m3, m3p)
+		   'else' transp(m1, m1p)
+  'end' bring in;
+									x8s00037
+  'proc' stm;
+  'if' addr > 56 { addr < 63 'then' undef(305) 'else' stm1;
+
+  'proc' stm1;
+  'if' addr > max addr 'then' undef(26322) 'else'
+  'bgn' 'int' region;							x8s00039
+    'if' in monitor 'then' 'goto' skip adm;
+    'if' prot 'then'
+    'bgn'
+      'if' dgp[addr '/' 512] 'ge' 0 'then'
+      'bgn'
+	'if' ~ (addr < 16 } addr = 63) 'then' undef(27500)
+      'end'
+    'end';
+    'if' nowrite[addr] 'then'
+    'bgn' 'real' m1, addr1, cg1;
+      m1:= m; addr1:= addr; cg1:= cg; undef(5);
+      m:= m1; addr:= addr1; cg:= cg1
+    'end' nowrite;
+    m cnt:= m cnt + 1;
+  skip adm:
+    filled[addr]:= cg = 0;
+    region:= addr '/' bufs; x:= addr - region * bufs;
+  rep:									x8s00042
+    'if' region =  0  'then' m0[x]:= m 'else'
+    'if' region = m1p 'then' 'bgn' m1[x]:= m; m1l:= m cnt 'end' 'else'
+    'if' region = m2p 'then' 'bgn' m2[x]:= m; m2l:= m cnt 'end' 'else'
+    'if' region = m3p 'then' 'bgn' m3[x]:= m; m3l:= m cnt 'end' 'else'
+    'bgn' bring in(region); 'goto' rep 'end';
+    'if' trace 'then' report writing(addr, m)
+  'end' stm 1;
+									x8s00049
+  'proc' mem;
+  'if' addr > 56 { addr < 63 'then' undef(304) 'else' mem1;
+
+  'proc' mem1;
+  'if' addr > max addr 'then' undef(26323) 'else'
+  'bgn' 'int' region; 'bool' fa;
+    'if' in monitor 'then' 'goto' skip adm1;
+    'if' prot 'then'
+    'bgn'
+      'if' dgp[addr '/' 512]  >   0 'then'
+      'bgn'
+	'if' ~ (addr < 16 } addr = 63) 'then' undef(27501)
+      'end'
+    'end';
+    ccs:= ccs + 2; m cnt:= mcnt + 1;
+    fa:= filled[addr];
+    'if' cg < 2  {  ~fa 'then' undef(25400);
+  skip adm1:
+    region:= addr '/' bufs; x:= addr - region * bufs;
+  rep:									x8s00054
+    'if' region =  0  'then' m:= m0[x] 'else'
+    'if' region = m1p 'then' 'bgn' m:= m1[x]; m1l:= m cnt 'end' 'else'
+    'if' region = m2p 'then' 'bgn' m:= m2[x]; m2l:= m cnt 'end' 'else'
+    'if' region = m3p 'then' 'bgn' m:= m3[x]; m3l:= m cnt 'end' 'else'
+    'bgn' bring in (region); 'goto' rep 'end';				x8s00059
+    'if' trace 'then' report reading(addr, m);
+    'if' in monitor 'then' 'goto' skip adm2;
+    'if' cg = 0 'then' 'else'
+    'if' cg = 1 'then' last par word:= m 'else'
+    'bgn'
+      last par word:= 'if' fa 'then' m 'else' -m;
+      'if' cg = 3 'then' c:= 'if' fa 'then' 0 'else' 1
+    'end';
+  skip adm2:
+  'end' mem1;
+									x8s00276
+  'proc' init memory;
+  'bgn'
+    y:= max addr '/' tp9;
+    'for' x:= 0 'step' 1 'until'  y  'do' dgp[x]:= 2;
+    'co'  dp:= 'true', gp:= 'true';
+    m cnt:= m1p:= m1l:= m2p:= m2l:= m3p:= m3l:= drum cnt:= 0;
+    x:= 0;
+  rep:
+    filled[x]:= nowrite[x]:= noexec[x]:= 'false';
+    x:= x + 1; 'if' x 'le' max addr 'then' 'goto' rep
+  'end' init memory;
+									x8s00061
+  'int' 'ar' m0, m1, m2, m3[0:bufs - 1];
+  'bool' 'ar' filled, nowrite, noexec[0 : max addr];
+  'real' m1p, m1l, m2p, m2l, m3p, m3l;
+  'int' 'ar' dgp[0 : max addr '/' 512];
+  'real' m cnt, drum cnt;
+									x8s00066
+'co' end memory simulation;						x8s00067
+									x8s00068
+'co' simulatie charon;
+
+  'real' charon teller, ie0, ie1;
+  'int' af0, af1, if0, if1, lvif0, lvif1;
+  'int' afv0, afv1, ifv0, ifv1, lvifv0, lvifv1;
+  'int' ip lezer;
+
+  'proc' setq(l, q0, q1, v); 'val' l; 'int' l, q0, q1, v;
+  'if' l > 31 'then' q0:= set(v, l  - 14, l  - 14, q0) 'else'
+  'if' l > 17 'then' q1:= set(v, 43 -  l, 43 -	l, q1) 'else'
+		     q0:= set(v, 17 -  l, 17 -	l, q0);
+
+  'int' 'proc' readq(l, q0, q1); 'val' l; 'int' l, q0, q1;
+  readq:=
+    'if' l > 31 'then' bit(l - 14, q0) 'else'
+    'if' l > 17 'then' bit(43 - l, q1) 'else' bit(17 - l, q0);
+
+  'proc' init q(q0, q1, qlist); 'int' q0, q1; 'string' qlist;
+  'bgn' 'int' i;
+    q0:= q1:= 0;
+    'for' i:= 0 'step' 1 'until' 39 'do'
+    set q(i, q0, q1, stringsymbol(i, qlist))
+  'end' init q;
+
+  'proc' wek charon; ;
+
+  'proc' attendeer charon af(n); undef(600 + n);
+
+  'proc' init charon;
+  'bgn'
+    charon teller:= 0;
+    ip lezer:= 5;
+    init q(afv0, afv1,
+      "0000000000000000000000000000000000000000");
+    init q(ifv0, ifv1,
+      "1111111111111111111111001111110000111111");
+    init q(lvifv0, lvifv1,
+      "1111111111111100111111001111110000001111");
+    ls
+  'end' init charon;
+
+  'proc' bva; 'goto' bva1;
+
+  'proc' ls;
+  'bgn'
+    iv:= bt:= 1;
+    ov:= ie0:= ie1:= dyst stat:= 0;
+    af0:= af1:= if0:= if1:= 0;
+    lvif0:= tp26m1; lvif1:= tp26m1 - tp12 + 1;
+  'end' ls;
+
+  'procedure' lsip;
+  'begin' ls; ip; ot:= tp18m1;
+    setq(ip lezer, if0,if1,1);
+    'if' ~ sva 'then' bva
+  'end' lsip;
+
+  'procedure' lsbi;
+  'begin' ls; bi; ot:= tp18m1;
+    setq(ip lezer, if0,if1,1);
+    'if' ~ sva 'then' bva
+  'end' lsbi;
+
+  'procedure' lsnb;
+  'begin' ls; ot:= tp18m1;
+    setq(38,if0,if1,1);
+    'if' ~ sva 'then' bva
+  'end' lsnb;
+
+  'proc' ip;								x8s00313
+  'begin' 'real' n, amount;
+									x8s00315
+    'real' 'proc' word;						x8s00316
+    'begin' 'int' n;							x8s00317
+
+      'real' 'proc' rehep1;
+      'bgn' 'real' n;
+	n:= rehep1:= rehep;
+	'if' n > 127 'then' undef(160)
+      'end' rehep1;
+
+    skip:								x8s00318
+      n:= -(64 - rehep1);   'if' n < 0 'then' 'goto' skip;
+      word:= ((n * 128 + rehep1) * 128 + rehep1) * 128 + rehep1
+    'end' word;							x8s00321
+									x8s00322
+  block:								x8s00323
+    n:= word;								x8s00324
+    amount:= n '/' tp18;						x8s00325
+    addr:= n - amount * tp18;	'if' addr = tp18m1 'then' addr:= -1;
+    'if' amount 'ne' 0	}  addr 'ne' 0 'then'				x8s00327
+    'begin'								x8s00328
+    loop:								x8s00329
+      addr:= addr + 1;	 amount:= amount - 1;				x8s00330
+      m:= word; 'if' m > tp26m1 'then' m:= m - tp27m1; stm;
+      'goto' 'if' amount = 0  }  amount = -512 'then' block 'else' loop x8s00333
+    'end' block
+
+  'end' ip;								x8s00335
+
+  'proc' bi;
+  'bgn' 'real' a, s; 'int' adr, cnt;
+
+    'proc' rehep inf;
+    'bgn'
+    rep: s:= rehep;
+      'if' s > 63 'then'
+      'bgn' 'if' s 'ne' 127 'then' undef(172);
+	'for' s:= rehep 'while' s 'ne' 127 'do';
+	'goto' rep
+      'end'
+    'end' rehep inf;
+
+    'proc' re biword;
+    'bgn' 'int' n; 'real' res; 'bool' par;
+      res:= s; par:= parlist[s] = 0;
+      'for' n:= 1 'step' 1 'until' 4 'do'
+      'bgn'
+	rehep inf; res:= res * 64 + s; par:= par 'eqv' parlist[s] = 0
+      'end';
+      'if' par 'then' undef(173);
+      a:= res 'div' tp27; s:= -(a * tp27 - x);
+      'if' s > tp26m1 'then' s:= s - tp27m1
+    'end' re biword;
+
+  read biblock:
+    rehep inf; 'if' s = 0 'then' 'goto' read biblock;
+    re biword; 'if' a 'ne' 3 'then' undef(174);
+    adr:= and(s, tp18m1); cnt:= and(s 'div' tp18, 511);
+    'if' cnt = 0 'then' cnt:= 512;
+    'if' adr > 0 } cnt > 0 'then'
+    'bgn'
+      'for' cnt:= cnt 'step' -1 'until' 1 'do'
+      'bgn' rehep inf; re biword;
+	'if' a 'ne' 0 'then' undef(175);
+	adr:= adr + 1;
+	'if' adr < 24 } adr > 56 { adr < 63 'then' undef(176);
+	addr:= adr; m:= s; stm1;
+      'end' cnt;
+      'goto' read biblock
+    'end' biblock;
+  'end' bi;
+
+'co' einde simulatie charon;
+
+'co' begin monitor procedures;
+
+'comment'masterprogramforx8s,61271;					2
+'integer''array'lwork[1:maxmaster];					3
+'integer'symb,char,plab,pvar,ptmp,ploc,pin,pwork,valuedenoted,level;	4
+'boolean'errorfree;							5
+'procedure'insert2(p,x1,x2);'integer'x2,x1,p;'begin''integer'q;q:=p;p:=$
+pwork;pwork:=pwork-3;'begin''if'~(pwork<pin)'then''goto'l2;error(''work$
+space exhausted'',pwork);'goto'l999;l2:lwork[p-0]:=x1;lwork[p-1]:=x2;lw$
+ork[p-2]:=q;'goto'l999;'end';l999:'end';				6
+'boolean''procedure'find2(p,x1,x2);'integer'x2,x1,p;'begin''integer'q,y$
+;find2:='true';q:=p;lfnd:'if'~(0<q)'then''goto'l1;y:=lwork[q-0];'begin'$
+'if'~(y=x1)'then''goto'l2;x2:=lwork[q-1];'goto'l999;l2:q:=lwork[q-2];'g$
+oto'lfnd;'end';l1:find2:='false';l999:'end';				7
+'boolean''procedure'still2(p,x1,x2);'integer'x2,x1,p;'begin'still2:='tr$
+ue';'if'~(0<p)'then''goto'l1;x1:=lwork[p-0];x2:=lwork[p-1];p:=lwork[p-2$
+];'goto'l999;l1:still2:='false';l999:'end';				8
+'procedure'insert5(p,x1,x2,x3,x4,x5);'integer'x5,x4,x3,x2,x1,p;'begin''$
+integer'q;q:=p;p:=pwork;pwork:=pwork-6;'begin''if'~(pwork<pin)'then''go$
+to'l2;error(''workspace exhausted'',pwork);'goto'l999;l2:lwork[p-0]:=x1$
+;lwork[p-1]:=x2;lwork[p-2]:=x3;lwork[p-3]:=x4;lwork[p-4]:=x5;lwork[p-5]$
+:=q;'goto'l999;'end';l999:'end';					9
+'procedure'prescan;'begin'pwork:=maxmaster;errorfree:='true';ploc:=maxm$
+aster;pin:=1;plab:=0;pvar:=0;ptmp:=0;char:=93;level:=1;nextsymbol;'begi$
+n''if'~xp(1207)'then''goto'l2;text;connectlabels;'begin''if'~errorfree'$
+then''goto'l3;'goto'l999;l3:nlcr;printtext(''incorrect program'');'goto$
+'terminate;'goto'l999;'end';l2:error(''no program'',symb);'goto'termina$
+te;'goto'l999;'end';l999:'end';					10
+'procedure'text;'begin''integer'y,loc;ltxt:'if'~xp(1115)'then''goto'l1;$
+'begin''if'~xp(1117)'then''goto'l2;y:=valuedenoted;'begin''if'~xp(1202)$
+'then''goto'l3;definelabel(y);'goto'ltxt;l3:gv(1115);applylabel(y,loc);$
+gv(loc);'goto'ltxt;'end';l2:error(''bad label'',symb);'goto'ltxt;'end';$
+l1:'if'~xp(1005)'then''goto'l6;gv(1005);'begin''if'~xp(1117)'then''goto$
+'l7;y:=valuedenoted;notevariable(y,loc);gv(loc);'goto'ltxt;l7:error(''b$
+ad variable'',symb);'goto'ltxt;'end';l6:'if'~xp(1117)'then''goto'l9;gv($
+1117);gv(valuedenoted);'goto'ltxt;l9:'if'~(symb=1207)'then''goto'l10;gv$
+(1207);shiftline;nextsymbol;level:=level+1;'goto'ltxt;l10:'if'~(symb=12$
+18)'then''goto'l11;'begin''if'~(level=1)'then''goto'l12;'goto'l999;l12:$
+level:=level-1;'if'~xp(1218)'then''goto'l13;gv(1218);'goto'ltxt;l13:'go$
+to'l0;'end';l11:'if'~(symb=1038)'then''goto'l15;gv(1038);string;gv(1038$
+);'goto'ltxt;l15:'if'~(symb=1219)'then''goto'l16;gv(1219);shiftline;nex$
+tsymbol;'goto'ltxt;l16:gv(symb);nextsymbol;'goto'ltxt;l0:l999:'end';	11
+'boolean''procedure'xp(x);'integer'x;'begin'xp:='true';'if'~(symb=x)'th$
+en''goto'l1;nextsymbol;'goto'l999;l1:xp:='false';l999:'end';		12
+'procedure'gv(x);'integer'x;'begin''if'~(pwork<pin)'then''goto'l1;error$
+(''workspace exhausted'',pwork);'goto'l999;l1:lwork[pin-0]:=x;pin:=pin+$
+1;l999:'end';								13
+'procedure'definelabel(lab);'integer'lab;'begin''integer'dummy;'if'~fin$
+d2(plab,lab,dummy)'then''goto'l1;error(''label defined twice'',lab);'go$
+to'l999;l1:insert2(plab,lab,pin);l999:'end';				14
+'procedure'applylabel(lab,loc);'integer'loc,lab;'begin''if'~find2(plab,$
+lab,loc)'then''goto'l1;'goto'l999;l1:insert2(ptmp,lab,pin);loc:=0;l999:$
+'end';									15
+'procedure'notevariable(var,loc);'integer'loc,var;'begin''if'~find2(pva$
+r,var,loc)'then''goto'l1;'goto'l999;l1:loc:=ploc;insert2(pvar,var,loc);$
+ploc:=ploc-1;l999:'end';						16
+'procedure'connectlabels;'begin''integer'lab,pl,loc;lrst:'if'~still2(pt$
+mp,lab,pl)'then''goto'l1;'begin''if'~find2(plab,lab,loc)'then''goto'l2;$
+lwork[pl-0]:=loc;'goto'lrst;l2:error(''label defined nonce'',lab);'goto$
+'lrst;'end';l1:'end';							17
+'procedure'error(x,y);'integer'y;'begin''integer'pos;pos:=printpos-1;ne$
+wline;printtext(x);print(y);nlcr;space(pos);errorfree:='false';'end';	18
+'procedure'string;'begin'lstr:'if'~ask(121)'then''goto'l1;nextsymbol;'g$
+oto'l999;l1:gv(char);xok;'goto'lstr;l999:'end';			19
+'boolean''procedure'ask(c1);'integer'c1;'begin'ask:='true';'if'~(char=c$
+1)'then''goto'l1;xok;'goto'l999;l1:ask:='false';l999:'end';		20
+'procedure'xok;'begin'prsym(126);nextchar;'end';			21
+'procedure'nextchar;'begin'prsym(char);char:=resym;'end';		22
+'procedure'newline;'begin'prsym(119);print(pin);prsym(118);'end';	23
+'procedure'shiftline;'begin''integer'pos;pos:=printpos-24;newline;space$
+(pos);'end';								24
+'procedure'nextsymbol;'begin''if'~trysymbol'then''goto'l1;'goto'l999;l1$
+:error(''unkown char'',char);nextchar;nextsymbol;l999:'end';		25
+'boolean''procedure'trysymbol;'begin''integer'val;trysymbol:='true';lnx$
+t:'if'~(char=93)'then''goto'l1;nextchar;'goto'lnxt;l1:'if'~(char=119)'t$
+hen''goto'l2;newline;char:=resym;'goto'lnxt;l2:'if'~(char=118)'then''go$
+to'l3;nextchar;'goto'lnxt;l3:'if'~(char<10)'then''goto'l4;val:=char;lde$
+c:xok;'begin''if'~(char<10)'then''goto'l5;val:=val*10+char;'goto'ldec;l$
+5:symb:=1117;valuedenoted:=val;'goto'l999;'end';l4:'if'~(char_<16)'then$
+''goto'l7;'if'~atogsymbol'then''goto'l7;'goto'l999;l7:'if'~(char_<25)'t$
+hen''goto'l8;'if'~htopsymbol'then''goto'l8;'goto'l999;l8:'if'~(char_<35$
+)'then''goto'l9;'if'~qtozsymbol'then''goto'l9;'goto'l999;l9:'if'~ask(12$
+0)'then''goto'l10;'begin''if'~ask(64)'then''goto'l11;'if'~ask(120)'then$
+''goto'l0;symb:=1203;'goto'l999;l11:'if'~ask(66)'then''goto'l12;'if'~as$
+k(120)'then''goto'l0;symb:=1204;'goto'l999;l12:'if'~ask(14)'then''goto'$
+l13;'if'~ask(26)'then''goto'l0;'if'~ask(120)'then''goto'l0;symb:=1213;'$
+goto'l999;l13:'if'~ask(16)'then''goto'l14;'begin''if'~ask(14)'then''got$
+o'l15;'if'~ask(120)'then''goto'l0;symb:=1216;'goto'l999;l15:'if'~ask(29$
+)'then''goto'l16;'if'~ask(120)'then''goto'l0;symb:=1215;'goto'l999;l16:$
+'goto'l0;'end';l14:'if'~ask(21)'then''goto'l18;'begin''if'~ask(14)'then$
+''goto'l19;'if'~ask(120)'then''goto'l0;symb:=1212;'goto'l999;l19:'if'~a$
+sk(29)'then''goto'l20;'if'~ask(120)'then''goto'l0;symb:=1211;'goto'l999$
+;l20:'goto'l0;'end';l18:'if'~ask(23)'then''goto'l22;'if'~ask(14)'then''$
+goto'l0;'if'~ask(120)'then''goto'l0;symb:=1214;'goto'l999;l22:val:=0;lo$
+ct:'begin''if'~ask(120)'then''goto'l24;symb:=1117;valuedenoted:=val;'go$
+to'l999;l24:'if'~ask(93)'then''goto'l25;'goto'loct;l25:'if'~(char<8)'th$
+en''goto'l26;adjust(val);val:=val*8+char;xok;'goto'loct;l26:error(''unk$
+nown char'',char);nextchar;'goto'loct;'end';'end';l10:'if'~ask(80)'then$
+''goto'l28;symb:=1201;'goto'l999;l28:'if'~ask(99)'then''goto'l29;symb:=$
+1218;'goto'l999;l29:'if'~ask(90)'then''goto'l30;symb:=1202;'goto'l999;l$
+30:'if'~ask(87)'then''goto'l31;symb:=1210;'goto'l999;l31:'if'~ask(70)'t$
+hen''goto'l32;symb:=1213;'goto'l999;l32:'if'~ask(74)'then''goto'l33;sym$
+b:=1215;'goto'l999;l33:'if'~ask(72)'then''goto'l34;symb:=1211;'goto'l99$
+9;l34:'if'~ask(65)'then''goto'l35;symb:=1205;'goto'l999;l35:'if'~ask(76$
+)'then''goto'l36;symb:=1206;'goto'l999;l36:'if'~ask(98)'then''goto'l37;$
+symb:=1207;'goto'l999;l37:'if'~ask(79)'then''goto'l38;symb:=1208;'goto'$
+l999;l38:'if'~ask(64)'then''goto'l39;symb:=1209;'goto'l999;l39:'if'~ask$
+(121)'then''goto'l40;symb:=1038;'goto'l999;l40:'if'~ask(91)'then''goto'$
+l41;symb:=1219;'goto'l999;l41:'if'~ask(127)'then''goto'l42;'if'~ask(70)$
+'then''goto'l0;symb:=1214;'goto'l999;l42:'if'~ask(66)'then''goto'l43;sy$
+mb:=1217;'goto'l999;l43:'if'~ask(126)'then''goto'l44;'begin''if'~ask(72$
+)'then''goto'l45;symb:=1212;'goto'l999;l45:'if'~ask(74)'then''goto'l46;$
+symb:=1216;'goto'l999;l46:'goto'l0;'end';l44:l0:trysymbol:='false';l999$
+:'end';								26
+'procedure'adjust(y);'integer'y;'begin''if'~(tp23_<y)'then''goto'l1;y:=$
+y-tp24;'goto'l999;l1:l999:'end';					27
+'boolean''procedure'atogsymbol;'begin'atogsymbol:='true';'if'~ask(10)'t$
+hen''goto'l1;'begin''if'~ask(11)'then''goto'l2;result(1103);'goto'l999;$
+l2:'if'~ask(13)'then''goto'l3;result(1102);'goto'l999;l3:'if'~ask(29)'t$
+hen''goto'l4;result(1101);'goto'l999;l4:result(101);'goto'l999;'end';l1$
+:'if'~ask(11)'then''goto'l6;'begin''if'~ask(29)'then''goto'l7;result(11$
+2);'goto'l999;l7:'if'~ask(31)'then''goto'l8;result(1020);'goto'l999;l8:$
+result(103);'goto'l999;'end';l6:'if'~ask(12)'then''goto'l10;result(104)$
+;'goto'l999;l10:'if'~ask(13)'then''goto'l11;'begin''if'~ask(10)'then''g$
+oto'l12;result(1105);'goto'l999;l12:'if'~ask(18)'then''goto'l13;result($
+1033);'goto'l999;l13:'if'~ask(30)'then''goto'l14;result(1031);'goto'l99$
+9;l14:'goto'l0;'end';l11:'if'~ask(14)'then''goto'l16;result(1106);'goto$
+'l999;l16:'if'~ask(15)'then''goto'l17;'begin''if'~ask(10)'then''goto'l1$
+8;result(1107);'goto'l999;l18:'if'~ask(20)'then''goto'l19;result(106);'$
+goto'l999;l19:result(105);'goto'l999;'end';l17:'if'~ask(16)'then''goto'$
+l21;'begin''if'~ask(24)'then''goto'l22;result(1003);'goto'l999;l22:resu$
+lt(107);'goto'l999;'end';l21:l0:atogsymbol:='false';l999:'end';	28
+'boolean''procedure'htopsymbol;'begin'htopsymbol:='true';'if'~ask(18)'t$
+hen''goto'l1;'begin''if'~ask(15)'then''goto'l2;result(1004);'goto'l999;$
+l2:'if'~ask(23)'then''goto'l3;'begin''if'~ask(28)'then''goto'l4;result($
+1109);'goto'l999;l4:result(1108);'goto'l999;'end';l3:'if'~ask(25)'then'$
+'goto'l6;result(1011);'goto'l999;l6:'if'~ask(29)'then''goto'l7;result(1$
+09);'goto'l999;l7:'if'~ask(31)'then''goto'l8;result(108);'goto'l999;l8:$
+'goto'l0;'end';l1:'if'~ask(21)'then''goto'l10;'begin''if'~ask(28)'then'$
+'goto'l11;'begin''if'~ask(11)'then''goto'l12;result(1012);'goto'l999;l1$
+2:'if'~ask(18)'then''goto'l13;result(1018);'goto'l999;l13:'if'~ask(23)'$
+then''goto'l14;result(1019);'goto'l999;l14:result(1017);'goto'l999;'end$
+';l11:'if'~ask(29)'then''goto'l16;result(110);'goto'l999;l16:result(111$
+5);'goto'l999;'end';l10:'if'~ask(22)'then''goto'l18;result(1116);'goto'$
+l999;l18:'if'~ask(23)'then''goto'l19;'begin''if'~ask(14)'then''goto'l20$
+;result(1035);'goto'l999;l20:'if'~ask(18)'then''goto'l21;result(113);'g$
+oto'l999;l21:'if'~ask(21)'then''goto'l22;result(1034);'goto'l999;l22:'g$
+oto'l0;'end';l19:'if'~ask(24)'then''goto'l24;'begin''if'~ask(15)'then''$
+goto'l25;'begin''if'~ask(15)'then''goto'l26;result(1006);'goto'l999;l26$
+:result(115);'goto'l999;'end';l25:'if'~ask(23)'then''goto'l28;result(10$
+01);'goto'l999;l28:'if'~ask(27)'then''goto'l29;result(111);'goto'l999;l$
+29:'if'~ask(29)'then''goto'l30;result(114);'goto'l999;l30:'if'~ask(31)'$
+then''goto'l31;result(116);'goto'l999;l31:'goto'l0;'end';l24:'if'~ask(2$
+5)'then''goto'l33;'begin''if'~ask(10)'then''goto'l34;result(1110);'goto$
+'l999;l34:'if'~ask(27)'then''goto'l35;result(1104);'goto'l999;l35:'if'~$
+ask(30)'then''goto'l36;result(1014);'goto'l999;l36:'goto'l0;'end';l33:l$
+0:htopsymbol:='false';l999:'end';					29
+'boolean''procedure'qtozsymbol;'begin'qtozsymbol:='true';'if'~ask(27)'t$
+hen''goto'l1;result(1111);'goto'l999;l1:'if'~ask(28)'then''goto'l2;'beg$
+in''if'~ask(18)'then''goto'l3;result(1016);'goto'l999;l3:'if'~ask(25)'t$
+hen''goto'l4;result(1037);'goto'l999;l4:'if'~ask(29)'then''goto'l5;'beg$
+in''if'~ask(10)'then''goto'l6;'begin''if'~ask(27)'then''goto'l7;result($
+1013);'goto'l999;l7:'if'~ask(29)'then''goto'l8;result(1032);'goto'l999;$
+l8:'goto'l0;'end';l6:'if'~ask(24)'then''goto'l10;result(1002);'goto'l99$
+9;l10:'goto'l0;'end';l5:'if'~ask(31)'then''goto'l12;result(1015);'goto'$
+l999;l12:result(117);'goto'l999;'end';l2:'if'~ask(29)'then''goto'l14;'b$
+egin''if'~ask(10)'then''goto'l15;result(1036);'goto'l999;l15:'if'~ask(2$
+7)'then''goto'l16;result(1112);'goto'l999;l16:result(102);'goto'l999;'e$
+nd';l14:'if'~ask(31)'then''goto'l18;result(1005);'goto'l999;l18:'if'~as$
+k(32)'then''goto'l19;'if'~ask(27)'then''goto'l0;'begin''if'~ask(18)'the$
+n''goto'l20;result(1113);'goto'l999;l20:'if'~ask(24)'then''goto'l21;res$
+ult(1114);'goto'l999;l21:'goto'l0;'end';l19:l0:qtozsymbol:='false';l999$
+:'end';								30
+'procedure'result(res);'integer'res;'begin'symb:=res;lskp:'begin''if'~($
+10_<char)'then''goto'l2;'if'~(char_<35)'then''goto'l2;nextchar;'goto'ls$
+kp;l2:'goto'l999;'end';l999:'end';					31
+'integer'pwrte,pexec,interdata,interaddr,interpari,interinst,interprot; 32
+'procedure'program;'begin'level:=1;pwork:=ploc;pwrte:=0;pexec:=0;prefil$
+lonconditions;jumpto(1);instructionlist;'end';				33
+'procedure'prefillonconditions;'begin'insert5(pwrte,0,maxaddr,1,1,pin);$
+insert5(pexec,0,maxaddr,1,1,pin);interdata:=pin;interaddr:=pin;interpar$
+i:=pin;interinst:=pin;interprot:=pin;gv(1002);gv(1219);'end';		34
+'procedure'instructionlist;'begin'lrst:instruction;'begin''if'~is(1219)$
+'then''goto'l2;'goto'lrst;l2:'if'~(symb=1218)'then''goto'l3;'goto'l999;$
+l3:error(''skipped from'',symb);skipinstruction;'begin''if'~is(1219)'th$
+en''goto'l5;'goto'lrst;l5:'goto'l999;'end';'end';l999:'end';		35
+'procedure'instruction;'begin''if'~is(1207)'then''goto'l1;level:=level+$
+1;instructionlist;'if'~is(1218)'then''goto'l0;level:=level-1;'goto'l999$
+;l1:'if'~(symb_<1005)'then''goto'l2;'if'~iscontrolinstruction'then''got$
+o'l2;'goto'l999;l2:'if'~(symb_<1020)'then''goto'l3;'if'~isconsoleinstru$
+ction'then''goto'l3;'goto'l999;l3:'if'~(symb_<1038)'then''goto'l4;'if'~$
+iscommentinstruction'then''goto'l4;'goto'l999;l4:error(''incorrect mast$
+er instruction'',symb);skipinstruction;'goto'l999;l0:l999:'end';	36
+'boolean''procedure'iscontrolinstruction;'begin''integer'p,val;iscontro$
+linstruction:='true';'if'~is(1001)'then''goto'l1;'if'~iscountoption(p)'$
+then''goto'l0;'if'~isoncondition(p)'then''goto'l0;skipinstruction;'goto$
+'l999;l1:'if'~is(1006)'then''goto'l2;'if'~isoffcondition'then''goto'l0;$
+'goto'l999;l2:'if'~is(1003)'then''goto'l3;'if'~is(1115)'then''goto'l0;n$
+ext(p);jumpto(p);'goto'l999;l3:'if'~is(1004)'then''goto'l4;'if'~isexpr($
+p)'then''goto'l0;'begin''if'~(p=0)'then''goto'l5;skipinstruction;'goto'$
+l999;l5:instruction;'goto'l999;'end';l4:'if'~is(1005)'then''goto'l7;nex$
+t(p);'if'~is(1213)'then''goto'l0;'if'~isexpr(val)'then''goto'l0;lwork[p$
+-0]:=val;'goto'l999;l7:'if'~is(1002)'then''goto'l8;'goto'terminate;'got$
+o'l999;l8:l0:iscontrolinstruction:='false';l999:'end';			37
+'procedure'next(p);'integer'p;'begin'p:=symb;pin:=pin+1;symb:=lwork[pin$
+-0];'end';								38
+'boolean''procedure'is(p);'integer'p;'begin'is:='true';'if'~(p=symb)'th$
+en''goto'l1;next(symb);'goto'l999;l1:is:='false';l999:'end';		39
+'boolean''procedure'iscountoption(n);'integer'n;'begin'iscountoption:='$
+true';'if'~isprimary(n)'then''goto'l1;'if'~is(1217)'then''goto'l0;'goto$
+'l999;l1:n:=1;'goto'l999;l0:iscountoption:='false';l999:'end';		40
+'boolean''procedure'isoncondition(count);'integer'count;'begin'isoncond$
+ition:='true';'if'~is(1113)'then''goto'l1;'if'~is(1101)'then''goto'l0;c$
+hain(count,pwrte);'goto'l999;l1:'if'~is(1106)'then''goto'l2;'if'~is(110$
+1)'then''goto'l0;chain(count,pexec);'goto'l999;l2:'if'~is(1114)'then''g$
+oto'l3;'goto'lact;l3:lact:'if'~is(1109)'then''goto'l4;interdata:=pin;'g$
+oto'l999;l4:'if'~is(1102)'then''goto'l5;interaddr:=pin;'goto'l999;l5:'i$
+f'~is(1110)'then''goto'l6;interpari:=pin;'goto'l999;l6:'if'~is(1104)'th$
+en''goto'l7;interprot:=pin;'goto'l999;l7:'if'~is(1105)'then''goto'l8;in$
+terdata:=pin;'goto'l999;l8:l0:isoncondition:='false';l999:'end';	41
+'procedure'chain(count,p);'integer'p,count;'begin''integer'from,to;'if'$
+~islocitem(from,to)'then''goto'l1;'begin''if'~is(1210)'then''goto'l2;ch$
+ain(count,p);'goto'lins;l2:lins:insert5(p,from,to,count,count,pin);catc$
+h(p,from,to);'goto'l999;'end';l1:l999:'end';				42
+'procedure'catch(p,from,to);'integer'to,from,p;'begin''integer'q;q:=fro$
+m;'begin''if'~(p=pwrte)'then''goto'l2;lwrt:nowrite[q]:='true';'begin''i$
+f'~(to_<q)'then''goto'l3;'goto'l999;l3:q:=q+1;'goto'lwrt;'end';l2:lxec:$
+noexec[q]:='true';'begin''if'~(to_<q)'then''goto'l6;'goto'l999;l6:q:=q+$
+1;'goto'lxec;'end';'end';l999:'end';					43
+'boolean''procedure'isoffcondition;'begin''integer'from,to;isoffconditi$
+on:='true';'if'~is(1113)'then''goto'l1;'if'~is(1101)'then''goto'l0;lwrt$
+:'if'~islocitem(from,to)'then''goto'l0;releasewrite(from,to);'begin''if$
+'~is(1210)'then''goto'l2;'goto'lwrt;l2:'goto'l999;'end';l1:'if'~is(1106$
+)'then''goto'l4;'if'~is(1101)'then''goto'l0;lxec:'if'~islocitem(from,to$
+)'then''goto'l0;releaseexec(from,to);'begin''if'~is(1210)'then''goto'l5$
+;'goto'lxec;l5:'goto'l999;'end';l4:l0:isoffcondition:='false';l999:'end$
+';									44
+'procedure'releasewrite(from,to);'integer'to,from;'begin''integer'q;q:=$
+from;lwrt:nowrite[q]:='false';'begin''if'~(to_<q)'then''goto'l2;'goto'l$
+999;l2:q:=q+1;'goto'lwrt;'end';l999:'end';				45
+'procedure'releaseexec(from,to);'integer'to,from;'begin''integer'q;q:=f$
+rom;lxec:noexec[q]:='false';'begin''if'~(to_<q)'then''goto'l2;'goto'l99$
+9;l2:q:=q+1;'goto'lxec;'end';l999:'end';				46
+'boolean''procedure'islocitem(from,to);'integer'to,from;'begin'islocite$
+m:='true';'if'~isaddress(from)'then''goto'l1;'begin''if'~is(1202)'then'$
+'goto'l2;'if'~isprimary(to)'then''goto'l0;'goto'l999;l2:to:=from;'goto'$
+l999;'end';l1:l0:islocitem:='false';l999:'end';			47
+'boolean''procedure'isaddress(y);'integer'y;'begin'isaddress:='true';'i$
+f'~is(1116)'then''goto'l1;'if'~isprimary(y)'then''goto'l0;checkaddr(y);$
+'goto'l999;l1:l0:isaddress:='false';l999:'end';			48
+'procedure'checkaddr(y);'integer'y;'begin''if'~(y=0)'then''goto'l1;y:=0$
+;'goto'l999;l1:'if'~(0_<y)'then''goto'l2;'if'~(y_<tp18m1)'then''goto'l2$
+;'goto'l999;l2:errornumber:=0;error(''bad address'',y);'goto'terminate;$
+l999:'end';								49
+'procedure'skipinstruction;'begin''integer'lev,i;lev:=level;lskp:'if'~($
+symb=1219)'then''goto'l1;'if'~(lev=level)'then''goto'l1;'goto'l999;l1:'$
+if'~is(1207)'then''goto'l2;level:=level+1;'goto'lskp;l2:'if'~(symb=1218$
+)'then''goto'l3;'if'~(lev=level)'then''goto'l3;'goto'l999;l3:'if'~is(12$
+18)'then''goto'l4;level:=level-1;'goto'lskp;l4:next(i);'goto'lskp;l999:$
+'end';									50
+'procedure'jumpto(p);'integer'p;'begin'pin:=p;symb:=lwork[pin-0];'end'; 51
+'boolean''procedure'isconsoleinstruction;'begin''integer'ad,exp,from,to$
+;isconsoleinstruction:='true';'if'~is(1011)'then''goto'l1;ip;'goto'l999$
+;l1:'if'~is(1017)'then''goto'l2;ls;'goto'l999;l2:'if'~is(1018)'then''go$
+to'l3;lsip;'goto'l999;l3:'if'~is(1012)'then''goto'l4;lsbi;'goto'l999;l4$
+:'if'~is(1019)'then''goto'l5;lsnb;'goto'l999;l5:'if'~is(1013)'then''got$
+o'l6;'if'~isaddress(ad)'then''goto'l0;ot:=ad;bva;'goto'l999;l6:'if'~is($
+1014)'then''goto'l7;'if'~isexpr(exp)'then''goto'l0;'if'~is(1108)'then''$
+goto'l0;llcs:'begin''if'~islocitem(from,to)'then''goto'l8;fill(from,to,$
+exp);'begin''if'~is(1210)'then''goto'l9;'goto'llcs;l9:'goto'l999;'end';$
+l8:'if'~isputreg(exp)'then''goto'l11;'begin''if'~is(1210)'then''goto'l1$
+2;'goto'llcs;l12:'goto'l999;'end';l11:'goto'l0;'end';l7:'if'~is(1020)'t$
+hen''goto'l15;bva;'goto'l999;l15:'if'~is(1016)'then''goto'l16;sva:='tru$
+e';bva;'goto'l999;l16:'if'~is(1015)'then''goto'l17;'begin''if'~is(1001)$
+'then''goto'l18;sva:='true';'goto'l999;l18:'if'~is(1006)'then''goto'l19$
+;sva:='false';'goto'l999;l19:'goto'l0;'end';l17:l0:isconsoleinstruction$
+:='false';l999:'end';							52
+'procedure'fill(from,to,exp);'integer'exp,to,from;'begin''integer'p;p:=$
+from;lstr:addr:=p;m:=exp;stm;'begin''if'~(p=to)'then''goto'l2;'goto'l99$
+9;l2:p:=p+1;'goto'lstr;'end';l999:'end';				53
+'boolean''procedure'isputreg(exp);'integer'exp;'begin''integer'bit;ispu$
+treg:='true';'if'~is(101)'then''goto'l1;a:=exp;'goto'l999;l1:'if'~is(10$
+3)'then''goto'l2;b:=exp;'goto'l999;l2:'if'~is(106)'then''goto'l3;fh:=ex$
+p;'goto'l999;l3:'if'~is(107)'then''goto'l4;ft:=exp;'goto'l999;l4:'if'~i$
+s(114)'then''goto'l5;ot:=exp;checkaddr(ot);'goto'l999;l5:'if'~is(111)'t$
+hen''goto'l6;or:=exp;'goto'l999;l6:'if'~is(117)'then''goto'l7;s:=exp;'g$
+oto'l999;l7:reducetobit(exp,bit);'if'~is(104)'then''goto'l8;c:=bit;nega$
+te(c);'goto'l999;l8:'if'~is(115)'then''goto'l9;of:=bit;'goto'l999;l9:'i$
+f'~is(108)'then''goto'l10;iv:=bit;'goto'l999;l10:'if'~is(116)'then''got$
+o'l11;ov:=bit;'goto'l999;l11:'if'~is(109)'then''goto'l12;itv:=bit;'goto$
+'l999;l12:'if'~is(110)'then''goto'l13;lt:=bit;'goto'l999;l13:'if'~is(11$
+2)'then''goto'l14;bt:=bit;'goto'l999;l14:'if'~is(113)'then''goto'l15;ni$
+nt:=bit;'goto'l999;l15:isputreg:='false';l999:'end';			54
+'procedure'reducetobit(exp,bit);'integer'bit,exp;'begin''if'~(exp=0)'th$
+en''goto'l1;bit:=0;'goto'l999;l1:bit:=1;l999:'end';			55
+'boolean''procedure'iscommentinstruction;'begin''integer'from,to;iscomm$
+entinstruction:='true';'if'~is(1032)'then''goto'l1;displaystatus;print($
+pin);printregs;'goto'l999;l1:'if'~is(1031)'then''goto'l2;ldmp:'begin''i$
+f'~islocitem(from,to)'then''goto'l3;dump(from,to);'begin''if'~is(1210)'$
+then''goto'l4;'goto'ldmp;l4:'goto'l999;'end';l3:dump(0,maxaddr);'goto'l$
+999;'end';l2:'if'~is(1033)'then''goto'l7;ldsp:'begin''if'~islocitem(fro$
+m,to)'then''goto'l8;givedisplay(from,to);'begin''if'~is(1210)'then''got$
+o'l9;'goto'ldsp;l9:'goto'l999;'end';l8:'if'~isdisplayreg'then''goto'l11$
+;'begin''if'~is(1210)'then''goto'l12;'goto'ldsp;l12:'goto'l999;'end';l1$
+1:'if'~isexpr(to)'then''goto'l14;nlcr;proct(to,9);print(to);'begin''if'$
+~is(1210)'then''goto'l15;'goto'ldsp;l15:'goto'l999;'end';l14:'goto'l0;'$
+end';l7:'if'~is(1034)'then''goto'l18;nlcr;'goto'l999;l18:'if'~is(1035)'$
+then''goto'l19;newpage;'goto'l999;l19:'if'~is(1036)'then''goto'l20;prsy$
+m(118);'goto'l999;l20:'if'~is(1037)'then''goto'l21;'begin''if'~isexpr(t$
+o)'then''goto'l22;space(to);'goto'l999;l22:space(1);'goto'l999;'end';l2$
+1:'if'~is(1038)'then''goto'l24;printstring;'goto'l999;l24:l0:iscommenti$
+nstruction:='false';l999:'end';					56
+'procedure'givedisplay(from,to);'integer'to,from;'begin''integer'p,y;p:$
+=from;ldsp:addr:=p;mem;y:=m;nlcr;printtext(''m['');proct(p,9);printtext$
+('']:'');proct(y,9);print(y);'begin''if'~(p=to)'then''goto'l2;'goto'l99$
+9;l2:p:=p+1;'goto'ldsp;'end';l999:'end';				57
+'boolean''procedure'isdisplayreg;'begin'isdisplayreg:='true';nlcr;'if'~$
+is(101)'then''goto'l1;printtext(''a   '');proct(a,9);print(a);'goto'l99$
+9;l1:'if'~is(103)'then''goto'l2;printtext(''b	'');proct(b,9);print(b)$
+;'goto'l999;l2:'if'~is(106)'then''goto'l3;printtext(''fk  '');proct(fh,$
+9);print(fh);'goto'l999;l3:'if'~is(107)'then''goto'l4;printtext(''g   '$
+');proct(ft,9);print(ft);'goto'l999;l4:'if'~is(114)'then''goto'l5;print$
+text(''ot  '');proct(ot,9);print(ot);'goto'l999;l5:'if'~is(111)'then''g$
+oto'l6;printtext(''or  '');proct(or,9);print(or);'goto'l999;l6:'if'~is($
+117)'then''goto'l7;printtext(''s   '');proct(s,9);print(s);'goto'l999;l$
+7:'if'~is(102)'then''goto'l8;printtext(''t   '');proct(tlink,9);print(t$
+link);'goto'l999;l8:'if'~is(104)'then''goto'l9;printtext(''c   '');prsy$
+m(c);'goto'l999;l9:'if'~is(115)'then''goto'l10;printtext(''of  '');prsy$
+m(of);'goto'l999;l10:'if'~is(116)'then''goto'l11;printtext(''ov  '');pr$
+sym(ov);'goto'l999;l11:'if'~is(108)'then''goto'l12;printtext(''iv  '');$
+prsym(iv);'goto'l999;l12:'if'~is(109)'then''goto'l13;printtext(''itv'')$
+;prsym(itv);'goto'l999;l13:'if'~is(112)'then''goto'l14;printtext(''bt  $
+'');prsym(bt);'goto'l999;l14:'if'~is(113)'then''goto'l15;printtext(''ni$
+nt'');prsym(nint);'goto'l999;l15:'if'~is(105)'then''goto'l16;printtext($
+''f   '');print(compf(fh,ft));'goto'l999;l16:isdisplayreg:='false';l999$
+:'end';								58
+'procedure'displaystatus;'begin''if'~(errornumber'ge'100{errornumber<20$
+0)'then''goto'l1;nlcr;printtext(''wrong data'');'goto'l999;l1:'if'~(err$
+ornumber'ge'300{errornumber<400)'then''goto'l2;nlcr;printtext(''wrong a$
+ddr'');'goto'l999;l2:'if'~(errornumber'ge'400{errornumber<500)'then''go$
+to'l3;nlcr;printtext(''wrong pari'');'goto'l999;l3:'if'~(errornumber'ge$
+'200{errornumber<300)'then''goto'l4;nlcr;printtext(''wrong inst'');'got$
+o'l999;l4:'if'~(errornumber=0)'then''goto'l5;nlcr;printtext(''in dyst  $
+ '');'goto'l999;l5:'if'~(errornumber=1)'then''goto'l6;nlcr;printtext(''$
+tijd op   '');'goto'l999;l6:'if'~(errornumber=2)'then''goto'l7;nlcr;pri$
+nttext(''gestopt   '');'goto'l999;l7:'if'~(errornumber=3)'then''goto'l8$
+;nlcr;printtext(''exec	    '');'goto'l999;l8:'if'~(errornumber=4)'then$
+''goto'l9;nlcr;printtext(''write     '');'goto'l999;l9:'if'~(errornumbe$
+r'ge'500{errornumber<600)'then''goto'l10;nlcr;printtext(''protection'')$
+;'goto'l999;l10:nlcr;printtext(''status  ok'');l999:'end';		59
+'procedure'printstring;'begin''integer'y;lstr:next(y);'begin''if'~(y=10$
+38)'then''goto'l2;'goto'l999;l2:prsym(y);'goto'lstr;'end';l999:'end';	60
+'boolean''procedure'isexpr(val);'integer'val;'begin''integer'y;isexpr:=$
+'true';'if'~isconj(val)'then''goto'l1;lrst:'begin''if'~is(1208)'then''g$
+oto'l2;'if'~isconj(y)'then''goto'l0;takeor(val,y,val);'goto'lrst;l2:'go$
+to'l999;'end';l1:l0:isexpr:='false';l999:'end';			61
+'boolean''procedure'isconj(val);'integer'val;'begin''integer'y;isconj:=$
+'true';'if'~isnegatable(val)'then''goto'l1;lrst:'begin''if'~is(1201)'th$
+en''goto'l2;'if'~isnegatable(y)'then''goto'l0;takeand(val,y,val);'goto'$
+lrst;l2:'goto'l999;'end';l1:l0:isconj:='false';l999:'end';		62
+'boolean''procedure'isnegatable(val);'integer'val;'begin'isnegatable:='$
+true';'if'~is(1206)'then''goto'l1;'if'~isnegatable(val)'then''goto'l0;n$
+egate(val);'goto'l999;l1:'if'~issimple(val)'then''goto'l2;'goto'l999;l2$
+:l0:isnegatable:='false';l999:'end';					63
+'boolean''procedure'issimple(val);'integer'val;'begin''integer'y;issimp$
+le:='true';'if'~isarithmeticexpr(val)'then''goto'l1;'begin''if'~is(1211$
+)'then''goto'l2;'if'~isarithmeticexpr(y)'then''goto'l0;'begin''if'~(val$
+<y)'then''goto'l3;val:=1;'goto'l999;l3:val:=0;'goto'l999;'end';l2:'if'~$
+is(1212)'then''goto'l5;'if'~isarithmeticexpr(y)'then''goto'l0;'begin''i$
+f'~(val_<y)'then''goto'l6;val:=1;'goto'l999;l6:val:=0;'goto'l999;'end';$
+l5:'if'~is(1213)'then''goto'l8;'if'~isarithmeticexpr(y)'then''goto'l0;'$
+begin''if'~(val=y)'then''goto'l9;val:=1;'goto'l999;l9:val:=0;'goto'l999$
+;'end';l8:'if'~is(1214)'then''goto'l11;'if'~isarithmeticexpr(y)'then''g$
+oto'l0;'begin''if'~(val=y)'then''goto'l12;val:=0;'goto'l999;l12:val:=1;$
+'goto'l999;'end';l11:'if'~is(1216)'then''goto'l14;'if'~isarithmeticexpr$
+(y)'then''goto'l0;'begin''if'~(y_<val)'then''goto'l15;val:=1;'goto'l999$
+;l15:val:=0;'goto'l999;'end';l14:'if'~is(1215)'then''goto'l17;'if'~isar$
+ithmeticexpr(y)'then''goto'l0;'begin''if'~(y<val)'then''goto'l18;val:=1$
+;'goto'l999;l18:val:=0;'goto'l999;'end';l17:'goto'l999;'end';l1:l0:issi$
+mple:='false';l999:'end';						64
+'procedure'takeor(x1,x2,x3);'integer'x3,x2,x1;'begin''if'~(0=x1)'then''$
+goto'l1;'if'~(0=x2)'then''goto'l1;x3:=0;'goto'l999;l1:x3:=1;l999:'end'; 65
+'procedure'takeand(x1,x2,x3);'integer'x3,x2,x1;'begin''if'~(0=x1)'then'$
+'goto'l1;x3:=0;'goto'l999;l1:'if'~(0=x2)'then''goto'l2;x3:=0;'goto'l999$
+;l2:x3:=1;l999:'end';							66
+'procedure'negate(x1);'integer'x1;'begin''if'~(x1=0)'then''goto'l1;x1:=$
+1;'goto'l999;l1:x1:=0;l999:'end';					67
+'boolean''procedure'isarithmeticexpr(val);'integer'val;'begin''integer'$
+y;isarithmeticexpr:='true';'if'~isterm(val)'then''goto'l1;lrst:'begin''$
+if'~is(1209)'then''goto'l2;'if'~isterm(y)'then''goto'l0;val:=val+y;'got$
+o'lrst;l2:'if'~is(1205)'then''goto'l3;'if'~isterm(y)'then''goto'l0;val:$
+=val-y;'goto'lrst;l3:'if'~is(1203)'then''goto'l4;'if'~isterm(y)'then''g$
+oto'l0;val:=xor(val,y);'goto'lrst;l4:'goto'l999;'end';l1:l0:isarithmeti$
+cexpr:='false';l999:'end';						68
+'boolean''procedure'isterm(val);'integer'val;'begin''integer'y;isterm:=$
+'true';'if'~isfactor(val)'then''goto'l1;lrst:'begin''if'~is(1217)'then'$
+'goto'l2;'if'~isfactor(y)'then''goto'l0;val:=val*y;'goto'lrst;l2:'if'~i$
+s(1204)'then''goto'l3;'if'~isfactor(y)'then''goto'l0;val:=and(val,y);'g$
+oto'lrst;l3:'goto'l999;'end';l1:l0:isterm:='false';l999:'end';		69
+'boolean''procedure'isfactor(val);'integer'val;'begin'isfactor:='true';$
+lrst:'if'~is(1209)'then''goto'l1;'goto'lrst;l1:'if'~is(1205)'then''goto$
+'l2;'if'~isfactor(val)'then''goto'l0;val:=-val;'goto'l999;l2:'if'~is(11$
+03)'then''goto'l3;'if'~isfactor(val)'then''goto'l0;val:=abs(val);'goto'$
+l999;l3:'if'~isprimary(val)'then''goto'l4;'goto'l999;l4:l0:isfactor:='f$
+alse';l999:'end';							70
+'boolean''procedure'isprimary(val);'integer'val;'begin''integer'y;ispri$
+mary:='true';'if'~is(1117)'then''goto'l1;next(val);'goto'l999;l1:'if'~i$
+s(1005)'then''goto'l2;next(y);val:=lwork[y-0];'goto'l999;l2:'if'~is(111$
+1)'then''goto'l3;val:=read;'goto'l999;l3:'if'~isaddress(y)'then''goto'l$
+4;addr:=y;mem;val:=m;'goto'l999;l4:'if'~issingleregister(val)'then''got$
+o'l5;'goto'l999;l5:'if'~is(1112)'then''goto'l6;val:=1;'goto'l999;l6:'if$
+'~is(1107)'then''goto'l7;val:=0;'goto'l999;l7:'if'~is(1207)'then''goto'$
+l8;'if'~isexpr(val)'then''goto'l0;'if'~is(1218)'then''goto'l0;'goto'l99$
+9;l8:l0:isprimary:='false';l999:'end';					71
+'boolean''procedure'issingleregister(val);'integer'val;'begin'issingler$
+egister:='true';'if'~is(101)'then''goto'l1;val:=a;'goto'l999;l1:'if'~is$
+(103)'then''goto'l2;val:=b;'goto'l999;l2:'if'~is(106)'then''goto'l3;val$
+:=fh;'goto'l999;l3:'if'~is(107)'then''goto'l4;val:=ft;'goto'l999;l4:'if$
+'~is(114)'then''goto'l5;val:=ot;'goto'l999;l5:'if'~is(111)'then''goto'l$
+6;val:=or;'goto'l999;l6:'if'~is(117)'then''goto'l7;val:=s;'goto'l999;l7$
+:'if'~is(102)'then''goto'l8;val:=tlink;'goto'l999;l8:'if'~is(104)'then'$
+'goto'l9;val:=c;negate(val);'goto'l999;l9:'if'~is(115)'then''goto'l10;v$
+al:=of;'goto'l999;l10:'if'~is(108)'then''goto'l11;val:=iv;'goto'l999;l1$
+1:'if'~is(116)'then''goto'l12;val:=ov;'goto'l999;l12:'if'~is(109)'then'$
+'goto'l13;val:=itv;'goto'l999;l13:'if'~is(110)'then''goto'l14;val:=lt;'$
+goto'l999;l14:'if'~is(112)'then''goto'l15;val:=bt;'goto'l999;l15:'if'~i$
+s(113)'then''goto'l16;val:=nint;'goto'l999;l16:issingleregister:='false$
+';l999:'end';								72
+'procedure'startmonitor;'begin'prescan;newpage;program;'end';		73
+'procedure'master;'begin''integer'pold;sva:='false';pold:=pin;'if'~(err$
+ornumber'ge'100{errornumber<200)'then''goto'l1;jumpto(interdata);instru$
+ction;'goto'terminate;'goto'l999;l1:'if'~(errornumber'ge'300{errornumbe$
+r<400)'then''goto'l2;jumpto(interaddr);instruction;'goto'terminate;'got$
+o'l999;l2:'if'~(errornumber'ge'400{errornumber<500)'then''goto'l3;jumpt$
+o(interpari);instruction;'goto'terminate;'goto'l999;l3:'if'~(errornumbe$
+r'ge'200{errornumber<300)'then''goto'l4;jumpto(interinst);instruction;'$
+goto'terminate;'goto'l999;l4:'if'~(errornumber'ge'500{errornumber<600)'$
+then''goto'l5;jumpto(interprot);instruction;'goto'terminate;'goto'l999;$
+l5:'if'~(errornumber=1)'then''goto'l6;displaystatus;'goto'terminate;'go$
+to'l999;l6:'if'~(errornumber=2)'then''goto'l7;instructionlist;'goto'l99$
+9;l7:'if'~(errornumber=3)'then''goto'l8;interrupt(pexec,ot);pin:=pold;'$
+goto'l999;l8:'if'~(errornumber=4)'then''goto'l9;interrupt(pwrte,addr);p$
+in:=pold;'goto'l999;l9:l999:'end';					74
+'procedure'interrupt(p,pl);'integer'pl,p;'begin''integer'from,to,count,$
+q;q:=p;lnxq:'if'~(q=0)'then''goto'l1;'goto'l999;l1:from:=lwork[q-0];to:$
+=lwork[q-1];count:=lwork[q-2];'begin''if'~(from_<pl)'then''goto'l3;'if'$
+~(pl_<to)'then''goto'l3;count:=count-1;lwork[q-2]:=count;'if'~(count_<0$
+)'then''goto'l3;count:=lwork[q-3];lwork[q-2]:=count;pin:=lwork[q-4];jum$
+pto(pin);instruction;'goto'l999;l3:q:=lwork[q-5];'goto'lnxq;'end';l999:$
+'end';									75
+  'proc' terminate;
+  'bgn' printtext("terminate"); master 'end';
+
+  'proc' report reading(addr, val); 'val' addr, val; 'int' addr, val;
+  'bgn' nlcr; printtext("read	 ");
+    proct(addr, 9);
+    proct(val, 9)
+  'end';
+
+  'proc' report writing(addr, val); 'val' addr, val; 'int' addr, val;
+  'bgn' nlcr; printtext("write	 ");
+    proct(addr, 9);
+    proct(val, 9)
+  'end';
+
+  'proc' report eoi;
+  'bgn' nlcr; printtext("e o inst") 'end';
+
+  'proc' report eod(addr, instr); 'val' addr, instr;
+    'int' addr, instr;
+  'bgn' nlcr; printtext("e o do  ");
+    proct(addr, 9);
+    proct(instr, 9)
+  'end';
+
+  'proc' report interrupt(ir addr); 'val' ir addr; 'int' ir addr;
+  'bgn' nlcr; printtext("interr  ");
+    proct(ir addr, 9)
+  'end';
+
+  'proc' report skip;
+  'bgn' nlcr; printtext("skip	 ") 'end';
+
+'co' einde ad hoc master- en trace-procedures;
+
+  'int' ir addr, error number;
+  'bool' sva, in monitor, trace, key;
+  'real' ccs, ccs1, ccs of, ccsmax, dcs, dcs max;
+  'real' jcnt, tcnt;
+  'real' 'ar' tlist[0 : 31];
+
+  'proc' init monitor;
+  'bgn'
+    ir addr:= 0; ccs:= ccs1:= ccs of:= dcs:= 0; error number:= 999;
+    jcnt:= tcnt:= 0;
+    ccsmax:= 1000000; dcsmax:= 100;
+    trace:= sva:= key:= 'false'; in monitor:= 'true';
+    start monitor
+  'end' init monitor;
+
+  'int' 'proc' undef(ern);   'val' ern;   'int' ern;			x8s00007
+  'bgn' undef:= 1;
+    ir addr:= ern '/' 1000; error number:= ern - ir addr * 1000;
+    'if' in monitor 'then' terminate 'else'
+    'if' filled[ir addr] 'imp' (ir addr= 0 } ov=0) 'then'
+    'bgn' in monitor:= 'true';
+      cg:= 0; master;
+      in monitor:= 'false'
+    'end' 'else'
+    'begin'
+      ingreep type:= ingreep type + 2;
+      ov:= 0; 'goto' ingreep
+    'end'
+  'end' undef;
+
+  'procedure' proct(m,dig); 'val' m,dig; 'int' m, dig;
+  'begin' 'real' n, x;
+    space(1);								x8s00021
+    'if' dig = 6 'then' x:= m / tp15 'else'
+    'bgn'
+      x:= ('if' 1/m < 0 'then' m + tp27m1 'else' m) / tp24;
+      dig:= 9
+    'end';
+  rep:									x8s00024
+    n:= entier(x); prsym(n);						x8s00025
+    'if' dig= 7 'then' space(1);					x8s00026
+    dig:= dig - 1;							x8s00027
+    'if' dig= 0 'then' 'goto' out;					x8s00028
+    x:= (x-n) * 8;							x8s00029
+    'goto' rep;							x8s00030
+  out:									x8s00031
+    space(1)								x8s00032
+  'end' proct;								x8s00033
+									x8s00034
+  'int' 'proc' reoct;
+  'bgn' 'int' n;
+  skip:
+    n:= resym; 'if' n < 10 'then' undef(151);
+    'if' n 'ne' 120 'then' 'goto' skip;
+    x:= 0;
+  rep:
+    n:= resym;
+    'if' n = 93 'then' n:= resym;
+    'if' n < 8 'then'
+    'bgn' x:= x * 8 + n; 'goto' rep 'end';
+    'if' n 'ne' 120 'then' undef(152);
+    'if' x > tp27m1 'then' undef(153);
+    'if' x > tp26m1 'then' x:= x - tp27m1;
+    reoct:= x
+  'end' reoct;
+
+  'int' 'proc' oct(x); 'val' x; 'real' x;
+  'bgn' 'int' i, sgn, n; 'real' res;
+    'if' 1/x < 0 'then' 'bgn' sgn:= -1; x:= -x 'end' 'else' sgn:= 1;
+    x:= (x + .05)/\9; res:= 0;
+    'for' i:= 1 'step' 1 'until' 9 'do'
+    'bgn' x:= x * 10; n:= entier(x); x:= x - n; res:= res * 8 + n
+    'end';
+    oct:= ('if' res > tp26m1 'then' res - tp27m1 'else' res) * sgn
+  'end' oct;
+
+  'proc' tn(s, x); 'val' x; 'real' x; 'string' s;
+  'bgn' 'int' i, n;
+    i:= 0;
+    'for' n:= stringsymbol(i, s) 'while' n 'ne' 255,
+	      93 'while' i < 7 'do'
+    'bgn' i:= i + 1; prsym(n) 'end';
+    proct(x, 9); space(5)
+  'end' tn;
+
+  'procedure' dump(from, to); 'val' from, to; 'integer' from, to;	x8s00035
+  'begin' 'real' i, j, x;
+    'if' from < 0 } to > max addr 'then' undef(161);
+    'if' line number 'ne' 1 } print pos 'ne' 0 'then' new page;
+    printtext("geheugendump van"); proct(from, 6);
+    printtext("tot"); proct(to,6); nlcr;
+    addr:= from; 'goto' heading;
+  rep:									x8s00038
+    addr:= addr + 1;							x8s00039
+  repa:								x8s00040
+    'if' addr > to 'then' 'goto' out;					x8s00041
+    'if' ~ filled[addr] 'then' 'goto' rep;				x8s00042
+    printtext("loc"); addr:= addr '/' 8 * 8;				x8s00043
+    proct(addr,6); prsym(65); proct(addr + 7,6);			x8s00044
+    i:= 0;								x8s00045
+  repi:								x8s00046
+    j:= 0; space(8);							x8s00047
+  repj:								x8s00048
+    'if' filled[addr] 'then'						x8s00049
+    'bgn' mem1; proct(m, 9) 'end' 'else' space(12);
+    addr:= addr + 1;							x8s00054
+    'if' addr > to 'then' 'goto' out;					x8s00055
+    j:= j + 1;								x8s00056
+    'if' j < 4 'then' 'goto' repj;					x8s00057
+    i:= i + 1;								x8s00058
+    'if' i < 2 'then' 'goto' repi;					x8s00059
+    nlcr;
+    'if' line number = 1 'then'
+  heading:
+    'begin' space(25);
+      'for' i:= 0 'step' 1 'until' 7 'do'
+      'begin' 'if' i = 4 'then' space(8);
+	printtext("	 ....."); prsym(i)
+      'end';
+      nlcr; nlcr;
+    'end';
+    'goto' repa;
+  out:									x8s00061
+    nlcr;								x8s00062
+    'for' i:= 1 'step' 1 'until' 144 'do' prsym(66);			x8s00063
+    nlcr								x8s00064
+  'end' dump;								x8s00065
+									x8s00066
+  'proc' print tlist;
+  'bgn' 'int' max,tcnt1, num, x;
+    nlcr; printtext("vorige sprongadressen"); nlcr;
+    max:= 'if' jcnt > 32 'then' 32 'else' jcnt; tcnt1:= tcnt;
+    'for' num:= 1 'step' 1 'until' max 'do'
+    'bgn'
+      space(2); fixt(2, 0, -num);
+      x:= tlist[tcnt1];
+      'if' 1/x < 0 'then' proct(and(x, tp26m1), 9) 'else'
+      'bgn' space(4); proct(x, 6) 'end';
+      tcnt1:= tcnt1 - 1;
+      'if' tcnt1 = -1 'then' tcnt1:= 31
+    'end';
+    nlcr
+  'end' print tlist;
+
+  'proc' print dgp;
+  'bgn' 'int' i, j;
+    nlcr; printtext("protectiebits");
+    'for' i:= 0 'step' 1 'until' aantal kasten - 1 'do'
+    'bgn' nlcr; printtext("kast"); absfixt(2, 0, i);
+      printtext("   dp ");
+      'for' j:= 0 'step' 1 'until' 3 'do'
+      prsym((even(dgp[32 * i + 8 * j]) + 1) / 2);
+      printtext("    gp ");
+      'for' j:= 0 'step' 1 'until' 31 'do'
+      prsym((dgp[32 * i + j] + 1) '/' 2)
+    'end';
+    nlcr
+  'end' print dgp;
+
+  'co'	dp  0 1 0 1
+	gp  0 0 1 1
+       dgp -1 0 1 2;
+
+  'proc' print regs;
+  'bgn' nlcr; printtext("registers"); nlcr;
+    tn("tlink",  tlink	); tn("fh",	fh     ); tn("ft",     ft    );
+    tn("a",	 a	); tn("s",	s      ); tn("b",      b     );
+    tn("or",	 or	); tn("addr",	addr   ); tn("m",      m     );
+    tn("ir addr",ir addr);
+    nlcr; printtext("jcnt (dec)"); absfixt(10, 0, jcnt);
+    space(10); printtext("ccs  (dec)"); absfixt(10, 0, ccs );
+    printtext("+"); absfixt(6, 0, ccs of);
+    space(10); printtext("drum cnt (dec)"); absfixt(10, 0, drum cnt);
+    nlcr
+  'end' print regs;
+
+  'proc' print charon;
+  'bgn' 'int' i;
+    nlcr; nlcr; printtext("charon"); nlcr;
+    printtext("apparaat    af	 if  lvif");
+    'for' i:= 0 'step' 1 'until' 39 'do'
+    'if' read q(i, ifv0, ifv1) + read q(i, lvifv0, lvifv1) = 2 'then'
+    'bgn'
+      nlcr; absfixt(7, 0, i);
+      absfixt(4, 0, readq(i,   af0,   af1));
+      absfixt(4, 0, readq(i,   if0,   if1));
+      absfixt(4, 0, readq(i, lvif0, lvif1))
+    'end';
+    nlcr;
+    'for' i:= 1 'step' 1 'until' 26 'do' prsym(66);
+    nlcr
+  'end' print charon;
+
+'co' einde monitor procedures;
+
+'comment' herkennen van instructies;
+									x8s00263
+  'real' x, y, z, u, v, w, tp26, tp27, tp27m1;
+  'real' i,l,n;
+  'real' 'array' tp[0:27];						x8s00266
+
+  'int' tp1, tp2, tp3, tp4, tp5, tp6, tp7, tp8, tp9, tp10,
+	tp11, tp12, tp13, tp14, tp15, tp16, tp17, tp18, tp19, tp20,
+	tp21, tp22, tp23, tp24, tp25;
+  'int' tp14m1, tp18m3, tp18m1, tp26m1;
+									x8s00268
+  'comment' hulp-velden uit or: ;					x8s00282
+  'real' b14t0,b16c15,b18c17,b20c19,b20,
+	 b14t12, b11t0, b11t5, b11t9, b8t6, b5t0,
+	 b4t0,b24,b21,b14t9,b8t0;
+									x8s00285
+  'comment' switches voor het herkennen van instructies: ;		x8s00286
+
+  'switch' sb26t22:=
+    aplus,
+    aeq,
+    'if' b20c19 = 1 'then' aplusdyn 'else' plusa,			x8s00290
+    'if' b20c19 = 1 'then' aeqdyn 'else'
+      'if' b16c15 = 1 'then' aplusa 'else' eqa,
+    splus,
+    seq,
+    'if' b20c19 = 1 'then' splusdyn 'else' pluss,			x8s00294
+    'if' b20c19 = 1 'then' seqdyn 'else'
+      'if' b16c15 = 1 'then' spluss 'else' eqs,
+    mulas,
+    muls,
+    axor,
+    aand,								x8s00300
+    divas,
+    diva,
+    sxor,
+    sand,								x8s00304
+    bplus,								x8s00305
+    beq,								x8s00306
+    'if' b20c19 = 1 'then' bplusdyn 'else' plusb,			x8s00307
+    'if' b20c19 = 1 'then' beqdyn 'else'
+      'if' b16c15 = 1 'then' bplusb 'else' eqb,
+    'if' b18c17 > 1 'then' dsw[undef(202)] 'else' jump,
+    'if' b18c17 > 1 'then' dsw[undef(204)] 'else'
+    'if' b21 = 0 'then' goto 'else'
+      'if' b20c19 = 3 'then' gotodyn 'else' dsw[undef(203)],
+    repn,								x8s00319
+    'if' b18c17 = 0 'then' subn 'else'					x8s00320
+    'if' b18c17 = 2 'then' subn 'else'					x8s00321
+    'if' b21 = 0 'then' subc 'else'
+      'if' b20c19 = 1 'then' subcdyn 'else' do,
+    'if' b16c15 = 1 'then'
+     ('if' b20c19 = 1 'then' dsw[undef(228)] 'else' gplus)
+      'else' fplus,
+    'if' b16c15 = 1 'then'
+     ('if' b20c19 = 1 'then' dsw[undef(229)] 'else' geq  )
+      'else' feq,
+    'if' b21 = 0 'then'
+     ('if' b20c19 = 1 } b20c19 = 3 } b18c17 'ne' 0 'then'
+	dsw[undef(232)] 'else' operate)
+      'else' dsw[undef(200)],
+    tabel6,
+    'if' b16c15 = 1 'then'
+     ('if' b20c19 = 1 'then' dsw[undef(230)] 'else' gtd  )
+      'else' ftd,
+    'if' b16c15 = 1 'then'
+     ('if' b20c19 = 1 'then' dsw[undef(231)] 'else' eqg  )
+      'else' 'if' b20c19 = 1 'then' feqdyn 'else' eqf,
+    dsw[undef(201)],							x8s00338
+    tabel7;
+									x8s00287
+  'switch' sb24c21c6c5:=
+    lca, lua, lcas, luas,
+    rca, rua, rcas, ruas,
+    lcs, lus, lcsa, lusa,
+    rcs, rus, rcsa, rusa;
+
+'comment' hulp-procedures: ;
+									x8s00304
+  'proc' itp(x); 'real' x;
+  'bgn' x:= tp[i]; i:= i + 1 'end' itp;
+
+'comment' initialisatie: ;
+									x8s00338
+  tp[0]:= 1;								x8s00339
+  'for' i:= 1 'step' 1 'until' 27 'do' tp[i]:= tp[i - 1] * 2;		x8s00340
+  i:= 1;
+  itp(tp1);  itp(tp2);	itp(tp3);  itp(tp4);  itp(tp5);  itp(tp6);
+  itp(tp7);  itp(tp8);	itp(tp9);  itp(tp10); itp(tp11); itp(tp12);
+  itp(tp13); itp(tp14); itp(tp15); itp(tp16); itp(tp17); itp(tp18);
+  itp(tp19); itp(tp20); itp(tp21); itp(tp22); itp(tp23); itp(tp24);
+  itp(tp25); itp(tp26); itp(tp27);
+  tp14m1:= tp14 - 1; tp18m3:= tp18 - 3;
+  tp18m1:= tp18 - 1; tp26m1:= tp26 - 1; tp27m1:= tp27 - 1;
+									x8s00345
+  set random(date/622598 + time/7200);
+  init parlist;							x8s00346
+  init x8;
+  init memory;
+  init charon;
+  init monitor;
+									x8s00352
+bva1:
+  in monitor:= 'false';
+
+basis cyclus 1:
+  'if' ot > tp18m3 'then'
+  'bgn' 'co' dynamische stop;
+    'if' dyst stat < 2 'then'
+    'bgn' dyst stat:= dyst stat + 1; 'goto' skip 'end' 'else'
+    'if' charon teller > 0 'then'
+    'bgn'
+      ccs:= ccs + charon teller; dyst stat:= 0; 'goto' skip
+    'end' 'else' undef(1)
+  'end' 'else' dyst stat:= 0;
+
+  cg:= 0; addr:= ot; mem; or:= m;
+  'if' noexec[ot] 'then' undef(4); ot:= ot + 1;
+  'if' ot > max addr 'then' undef(26358);
+
+basis cyclus 2:
+  'if' ccs 'ge' ccsmax 'then' undef(2);
+  flag:=  'false';
+  y:= 'if' 1/or < 0 'then' or + tp27m1 'else' or;
+  x:= y '/' tp15; b14t0 := y - x * tp15; y:= x;			x8s00362
+  x:= y '/' tp2;  b16c15:= y - x * tp2;  y:= x;			x8s00363
+  x:= y '/' tp2;  b18c17:= y - x * tp2;  y:= x;			x8s00364
+  x:= y '/' tp2;  b20c19:= y - x * tp2;  y:= x;			x8s00365
+  x:= y '/' tp1;  b21	:= y - x * tp1;				x8s00366
+  'goto' sb26t22[x + 1];
+									x8s00525
+tabel6:
+  b24:= 0; 'goto' tabel;
+tabel7:
+  b24:= 1;
+tabel:
+  b20:= b20c19 '/' 2;							x8s00527
+  'if' b20 + b20 'ne' b20c19 'then'					x8s00528
+  'bgn'
+    'if' bitstring(26, 17, or) = 1004 { b14t0 = 31488 'then'
+    'goto' memprot;
+    undef(206)
+  'end' b19 = 1;
+  b14t12:= b14t0 '/' tp12; b11t0:= b14t0 - b14t12 * tp12;
+  'if' b14t12 = 0 'then'
+  'bgn' 'co' shift, nora, nors, noras, rgt, ten;
+    b11t5:= b11t0 '/' tp5;  b4t0:= b11t0 - b11t5 * tp5;
+    'if' b11t5 < 4 'then' 'goto' shift 'else'
+    'if' b11t5 = 5 'then'
+    'bgn'
+      'if' b21 + b20 + b4t0 = 0 'then'
+      'goto' 'if' b24 = 0 'then' nora 'else' nors
+    'end' 'else'
+    'if' b11t5 = 7 'then'
+    'bgn'
+      'if' b24 + b21 + b20 + b4t0 = 0 'then' 'goto' noras
+    'end' 'else'
+    'if' b11t5 > 7 { b11t5 < 11 'then'
+    'bgn'
+      'if' b24 + b20 = 0 { b4t0 < 3 'then' 'goto' rgt
+    'end' 'else'
+    'if' b11t5 = 32 'then'
+    'bgn'
+      'if' b24 = 1 { b21 + b20 = 0 { b4t0 < 2 'then' 'goto' ten
+    'end'
+  'end' 'else'
+  'if' b14t12 = 6 'then'
+  'bgn' 'co' clp, int, maak iv, maak ov, itvon;
+    b11t9:= b11t0 '/' tp9; b8t0:= b11t0 - b11t9 * tp9;
+    'if' b21 + b20 + b18c17 + b8t0 = 0 'then'
+    'bgn'
+      'if' b11t9 = 0 'then' 'goto' maak iv;
+      'if' b11t9 = 1 'then' 'goto' maak ov;
+      'if' b11t9 = 2 { b24 = 1 'then' 'goto' itvon;
+      'if' b11t9 = 3 { b24 = 0 'then' 'goto' clp;
+      'if' b11t9 = 4 { b24 = 0 'then' 'goto' int
+    'end'
+  'end' 'else'
+  'if' b14t12 = 7 'then'
+  'bgn' 'co' maak q, lees q;
+    b11t9:= b11t0 '/' tp9; b8t0:= b11t0 - b11t9 * tp9;
+    b 8t6:= b 8t0 '/' tp6; b5t0:= b 8t0 - b 8t6 * tp6;
+    'if' b11t9 < 4 'then'
+    'bgn'
+      'if' b21 + b18c17 + b8t6 = 0 'then' 'goto' maak q
+    'end' 'else'
+    'if' b21 = 0 { b8t6 < 2 { b5t0 < 2 'then' 'goto' lees q
+  'end' tabel;
+  undef(205);
+									x8s00490
+aplusdyn:   b20c19:= 4;   'goto' aplus;				x8s00491
+aeqdyn:     b20c19:= 4;   'goto' aeq;
+splusdyn:   b20c19:= 4;   'goto' splus;				x8s00493
+seqdyn:     b20c19:= 4;   'goto' seq;
+bplusdyn:   b20c19:= 4;   'goto' bplus;				x8s00495
+beqdyn:     b20c19:= 4;   'goto' beq;
+gotodyn:
+  b20c19:= 4; b21:= 0; 'co' abnormale betekenis van b21; 'goto' goto;
+subcdyn:    b20c19:= 4;   'goto' subc;
+feqdyn:     b20c19:= 4;   'goto' feq;
+									x8s00594
+									x8s00595
+aeq:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' val:= -val;
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' a:= val;
+  'goto' time0;
+
+seq:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' val:= -val;
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' s:= val;
+  'goto' time0;
+
+beq:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' val:= -val;
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' b:= val;
+  'goto' time0;
+
+aplus:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' ddr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= 'if' b21 = 0 'then' a + val 'else' a - val;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' a:= val;
+  'goto' time0;
+
+splus:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= 'if' b21 = 0 'then' s + val 'else' s - val;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' s:= val;
+  'goto' time0;
+
+bplus:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= itv + 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= 'if' b21 = 0 'then' b + val 'else' b - val;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' b:= val;
+  'goto' time0;
+
+eqa:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(306);
+  val:= 'if' b21 = 0 'then' a 'else' -a;
+  'if' b18c17 > 0 'then' cond;
+  m:= val; cg:= itv; stm1;
+  'if' mc addr 'then' b up1;
+  'goto' time2;
+
+eqs:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(307);
+  val:= 'if' b21 = 0 'then' s 'else' -s;
+  'if' b18c17 > 0 'then' cond;
+  m:= val; cg:= itv; stm1;
+  'if' mc addr 'then' b up1;
+  'goto' time2;
+
+eqb:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(308);
+  val:= 'if' b21 = 0 'then' b 'else' -b;
+  'if' b18c17 > 0 'then' cond;
+  m:= val; cg:= itv; stm1;
+  'if' mc addr 'then' b up1;
+  'goto' time2;
+
+aplusa:
+  flag:= 'true';
+plusa:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(309);
+  cg:= 1; mem1; val:= m;
+  val:= 'if' b21 = 0 'then' val + a 'else' val - a;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' flag } b16c15 'ne' 1 'then'
+  'bgn' m:= val; cg:= itv; stm1 'end';
+  'if' flag 'then' a:= m;
+  'if' mc addr 'then' b up1;
+  'goto' time3;
+
+spluss:
+  flag:= 'true';
+pluss:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(310);
+  cg:= 1; mem1; val:= m;
+  val:= 'if' b21 = 0 'then' val + s 'else' val - s;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' flag } b16c15 'ne' 1 'then'
+  'bgn' m:= val; cg:= itv; stm1 'end';
+  'if' flag 'then' s:= m;
+  'if' mc addr 'then' b up1;
+  'goto' time3;
+
+bplusb:
+  flag:= 'true';
+plusb:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' regop 'then' undef(311);
+  cg:= 1; mem1; val:= m;
+  val:= 'if' b21 = 0 'then' val + b 'else' val - b;
+  'if' abs(val) > tp26m1 'then'
+  'bgn' of:= 1;
+    val:= 'if' val > 0 'then' val - tp27m1 'else' val + tp27m1
+  'end';
+  'if' b18c17 > 0 'then' cond;
+  'if' flag } b16c15 'ne' 1 'then'
+  'bgn' m:= val; cg:= itv; stm1 'end';
+  'if' flag 'then' b:= m;
+  'if' mc addr 'then' b up1;
+  'goto' time3;
+
+axor:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= xor(a, 'if' b21 = 0 'then' val 'else' -val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' a:= val;
+  'goto' time0;
+
+sxor:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= xor(s, 'if' b21 = 0 'then' val 'else' -val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' s:= val;
+  'goto' time0;
+
+aand:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= and(a, 'if' b21 = 0 'then' val 'else' -val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' a:= val;
+  'goto' time0;
+
+sand:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  val:= and(s, 'if' b21 = 0 'then' val 'else' -val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' s:= val;
+  'goto' time0;
+
+muls:
+  'if' b16c15 = 1 'then' undef(223);
+  flag:= 'true';
+mulas:
+  'if' b16c15 = 1 'then' undef(222);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' val:= - val;
+  hulp1:= val; 'co' voor ccs-metingen;
+  'if' flag 'then' a:= 0;
+  y:= val*s + a;
+  'if' y=0 'then' a:= s:= y 'else'
+  'if' abs(y)<tp26 'then'
+  'begin' s:= y; a:= 'if' y>0 'then' 0 'else' -0 'end' 'else'
+  'begin' y:= val '/' tp13;   z:= y * tp13;
+    v:= s '/' tp13;
+    z:= (s - v*tp13) * z + (val - z) * s + a;
+    w:= z '/' tp26;
+    s:= z - w*tp26;
+    a:= y * v + w;
+    'if' s=0 'then' s:= sign(a)*0
+  'end' mulas;
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+
+  x:= abs(hulp1)/tp26;	 y:= 26;
+rep ccs mulas:								x8s00018
+  x:= x + x;   y:= y - 1;   ccs:= ccs + 1;				x8s00019
+  'if' x'ge'1 'then' x:= x - 1 'else'					x8s00020
+  'begin' x:= x + x;   y:= y - 1;					x8s00021
+    'if' x 'ge' 1 'then' x:= x - 1					x8s00022
+  'end';								x8s00023
+  'if' x = 0 'then' ccs:= ccs + (y+1) '/' 2 'else' 'goto' rep ccs mulas;
+  'goto' time2;
+
+diva:
+  'if' b16c15 = 1 'then' undef(224);
+  flag:= 'true';
+divas:
+  'if' b16c15 = 1 'then' undef(225);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addr op 'then' val:= addr 'else'
+  'bgn' cg:= 1; memreg; val:= m 'end';
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' val:= - val;
+  'if' abs(val) 'le' abs(a) 'then' undef(103);
+  'if' flag 'then'
+  s:= 'if' a = 0 'then' a 'else' 'if' a > 0 'then' 0 'else' -0 'else'
+  'if' ~1/a>0 'eqv' 1/s>0 'then' undef(102);
+  hulp1:= a;
+  'if' abs(a)<tp13 'then'
+  'bgn'
+    y:= a * tp26 + s;
+    s:= y '/' val; a:= y - s * val
+  'end' 'else'
+  'bgn'
+    u:= s '/' tp13; y:= a * tp13 + u; v:= y '/' val;
+    y:= (y - v * val - u) * tp13 + s; w:= y '/' val;
+    a:= y - w * val; s:= v * tp13 + w
+  'end' diva, divas;
+  'if' a=0 'then'
+  a:= 'if' hulp1 = 0 'then' hulp1 'else'
+      'if' hulp1 > 0 'then' 0 'else' -0;
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  ccs:= ccs + 28;
+  'goto' time0;
+
+ten:
+  'if' b16c15 = 1 'then' undef(211);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  x:= s * 10; val:= s:= tail of(x);
+  'if' b4t0 = 0 'then' a:= head of(x);
+  'if' b18c17 > 0 'then' cond;
+  'goto' time1;
+
+noras:
+  'if' b16c15 = 1 'then' undef(219);
+  flag:= 'true';
+shift:
+  'if' b16c15 = 1 'then' undef(218);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' b20 =0 'then' l:= b4t0 'else'
+  'bgn' l:= b4t0 + b;
+    'if' l < 0 } l > 31 'then' undef(140)
+  'end';
+  'if' b11t5 > 1 'then'
+  'bgn' 'co' ook voor noras;
+    nega:= 1/a < 0;
+    negs:= 1/s < 0;
+  'end';
+  'if' flag 'then'
+  'bgn' 'co' noras;
+    b:= 'if' a = 0 'then' norm shift
+       ('if' nega { ~negs 'then' s - tp26m1 'else'
+	'if' negs { ~nega 'then' s + tp26m1 'else' s, x) + 26 'else'
+	norm shift(a, x);
+    l:= n:= b; 'goto' lcas
+  'end';
+  n:= l;
+  'goto' sb24c21c6c5[(b24 + b24 + b21) * 4 + b11t5 + 1];
+
+lca:
+  a:= circ shift(a, n);
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+lcs:
+  s:= circ shift(s, n);
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+lcas:
+  'if' n>26 'then' 'begin' n:= 53-n; 'goto' rcas2 'end';
+lcas2:
+  'if' n'ne'0 'then'
+  'bgn'
+    'if' nega 'then' a:= a + tp27m1;
+    'if' negs 'then' s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a '/' hulp3;
+    sh:= s '/' hulp2;
+    a:= -((ah * hulp3 - a) * hulp1 - sh);
+    s:= -((sh * hulp2 - s) * hulp1 - ah);
+    'if' a 'ge' tp26 'then' a:= a - tp27m1;
+    'if' negs 'then' s:= s - tp26m1;
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+lcsa:
+  'if' n>27 'then' 'bgn' n:= 54 - n; 'goto' rcsa2 'end';
+lcsa2:
+  'if' n'ne'0 'then'
+  'bgn'
+    'if' negs 'then' s:= s + tp27m1;
+    'if' nega 'then' a:= a + tp27m1;
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s '/' hulp3;
+    ah:= a '/' hulp3;
+    s:= -((sh * hulp3 - s) * hulp1 - ah);
+    a:= -((ah * hulp3 - a) * hulp1 - sh);
+    'if' s 'ge' tp26 'then' s:= s - tp27m1;
+    'if' a 'ge' tp26 'then' a:= a - tp27m1;
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+rca:
+  a:= circ shift(a, -n);
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+rcs:
+  s:= circ shift(s, -n);
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+rcas:
+  'if' n>26 'then' 'begin' n:= 53-n; 'goto' lcas2 'end';
+rcas2:
+  'if' n'ne'0 'then'
+  'bgn'
+    'if' nega 'then' a:= a + tp27m1;
+    'if' negs 'then' s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a '/' hulp1;
+    sh:= s '/' hulp1;
+    at:= ah * hulp1 - a;
+    a:= -((sh * hulp1 - s) * hulp3 - ah);
+    s:= -(at * hulp2 - sh);
+    'if' a 'ge' tp26 'then' a:= a - tp27m1;
+    'if' negs 'then' s:= s - tp26m1;
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+rcsa:
+  'if' n>27 'then' 'bgn' n:= 54 - n; 'goto' lcsa2 'end';
+rcsa2:
+  'if' n'ne'0 'then'
+  'bgn'
+    'if' negs 'then' s:= s + tp27m1;
+    'if' nega 'then' a:= a + tp27m1;
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s '/' hulp1;
+    ah:= a '/' hulp1;
+    st:= sh * hulp1 - s;
+    s:= -((ah * hulp1 - a) * hulp3 - sh);
+    a:= -(st * hulp3 - ah);
+    'if' s 'ge' tp26 'then' s:= s - tp27m1;
+    'if' a 'ge' tp26 'then' a:= a - tp27m1;
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+lua:
+  'if' n 'ge' 26 'then' a:= sign(a) * 0 'else'
+  'if' a 'ne' 0 { n 'ne' 0 'then'
+  'bgn'
+    hulp2:= tp[26 - n]; at:= a - a '/' hulp2 * hulp2;
+    a:= 'if' at = 0 'then' sign(a) * 0 'else' tp26 / hulp2 * at
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel;
+
+lus:
+  'if' n 'ge' 26 'then' s:= sign(s) * 0 'else'
+  'if' s 'ne' 0 { n 'ne' 0 'then'
+  'bgn'
+    hulp2:= tp[26 - n]; st:= s - s '/' hulp2 * hulp2;
+    s:= 'if' st = 0 'then' sign(s) * 0 'else' tp26 / hulp2 * st
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel;
+
+luas:
+  'if' n > 26 'then'
+  'bgn'
+    'if' negs 'then' s:= s + tp26m1;
+    hulp1:= tp[n - 26]; hulp2:= tp26/hulp1;
+    a:= -(s '/' hulp2 * hulp2 - s) * hulp1;
+    s:= 'if' negs 'then' -tp26m1 'else' 0;
+    'if' nega 'then'
+    'bgn'
+      a:= a - tp26m1 + hulp1 - 1;
+      s:= s + tp26m1
+    'end';
+  'end' 'else'
+  'if' n 'ne' 0 'then'
+  'bgn'
+    'if' nega 'then' a:= a + tp26m1;
+    'if' negs 'then' s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1;
+    sh:= s '/' hulp2;
+    a:= -((a '/' hulp2 * hulp2 - a) * hulp1 - sh);
+    s:= -(sh * hulp2 - s) * hulp1;
+    'if' negs 'then' s:= s - tp26m1;
+    'if' nega 'then'
+    'bgn' a:= a - tp26m1; s:= s + hulp1 - 1 'end';
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+lusa:
+  'if' n>26 'then'
+  'bgn'
+    'if' nega 'then' a:= a + tp27m1;
+    hulp1:= tp[n - 27]; hulp2:= tp26/hulp1;
+    s:= -(a '/' hulp2 * hulp2 - a) * hulp1;
+    a:= 0;
+    'if' negs 'then'
+    'bgn' s:= s - tp26m1 + hulp1 - 1;  a:= -0 'end';
+  'end' 'else'
+  'if' n 'ne' 0 'then'
+  'bgn'
+    'if' nega 'then' a:= a + tp27m1;
+    'if' negs 'then' s:= s + tp26m1;
+    hulp1:= tp[n]; hulp2:= tp26/hulp1; hulp3:= hulp2 + hulp2;
+    ah:= a '/' hulp3;
+    a:= -(ah * hulp3 - a) * hulp1;
+    s:= -((s '/' hulp2 * hulp2 - s) * hulp1 - ah);
+    'if' a 'ge' tp26 'then' a:= a - tp27m1;
+    'if' negs 'then'
+    'bgn' s:= s - tp26m1; a:= a + hulp1 - 1 'end';
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+rua:
+  a:= 'if' n 'ge' 26 'then' sign(a) * 0 'else' a '/' tp[n];
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel;
+
+rus:
+  s:= 'if' n 'ge' 26 'then' sign(s) * 0 'else' s '/' tp[n];
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel;
+
+ruas:
+  'if' n>26 'then'
+  'begin' s:= a'/'tp[n-26]; a:= 'if' nega 'then' -0 'else' 0;
+    'if' nega { ~negs 'then' s:= s + tp26m1 'else'
+    'if' negs { ~ nega 'then' s:= s - tp26m1
+  'end' 'else' 'if' n'ne'0 'then'
+  'bgn'
+    hulp1:= tp[n]; hulp2:= tp26/hulp1;
+    ah:= a '/' hulp1;
+    'if' nega 'then' a:= a + tp26m1;
+    'if' negs 'then' s:= s + tp26m1;
+    s:= -((a '/' hulp1 * hulp1 - a) * hulp2 - s '/' hulp1);
+    a:= ah;
+    'if' negs 'then' s:= s - tp26m1;
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= a; cond 'end';
+  'goto' timel2;
+
+rusa:
+  'if' n>26 'then'
+  'begin' a:= s'/'tp[n-27]; s:= 'if' negs 'then' -0 'else' 0 'end'
+  'else' 'if' n 'ne' 0 'then'
+  'bgn'
+    hulp1:= tp[n]; hulp3:= tp27/hulp1;
+    sh:= s '/' hulp1;
+    'if' negs 'then' s:= s + tp26m1;
+    'if' nega 'then' a:= a + tp27m1;
+    a:= -((s '/' hulp1 * hulp1 - s) * hulp3 - a '/' hulp1);
+    s:= sh;
+    'if' a 'ge' tp26 'then' a:= a - tp27m1
+  'end';
+  'if' b18c17 > 0 'then' 'bgn' val:= s; cond 'end';
+  'goto' timel2;
+
+nora:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  b:= l:= norm shift(a, val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' a:= val; 'goto' timel;
+
+nors:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  b:= l:= norm shift(s, val);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then' s:= val; 'goto' timel;
+
+feq:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addrop 'then' 'bgn' valh:= 0; valt:= addr 'end' 'else'
+  'if' addr = 57 'then'
+  'bgn' valh:= fh; valt:= ft 'end' 'else'
+  'if' addr = 59 'then'
+  'bgn' valh:=	a; valt:=  s 'end' 'else'
+  'bgn' cg:= 0; mem; valh:= m; addr:= addr + 1; mem; valt:= m 'end';
+  'if' mc addr 'then' bdown2;
+  'if' signinc 'then' of:= 1;
+  'if' b21 = 1 'then' 'bgn' valh:= -valh; valt:= -valt 'end';
+  'if' b18c17 > 0 'then' condf;
+  'if' abs(valh) > tp14m1 'then' nint:= 1;
+  fh:= valh; ft:= valt;
+  'goto' time0;
+
+eqf:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' b21 = 0 'then' 'bgn' valh:= fh; valt:= ft 'end' 'else'
+  'bgn' valh:= -fh; valt:= -ft 'end';
+  'if' b18c17 > 0 'then' condf;
+  'if' abs(valh) > tp14m1 'then' nint:= 1;
+  cg:= 0; m:= valh; stm; addr:= addr + 1; m:= valt; stm;
+  'if' mc addr 'then' b up2;
+  'goto' time0;
+
+geq:
+  calc addr;
+  'if' addr = 57 'then' undef(341);
+  cg:= 0; memreg; valt:= m; valh:= sign(m) * 0;
+  'if' mc addr 'then' bdown1;
+  'if' b21 = 1 'then' 'bgn' valh:= -valh; valt:= -valt 'end';
+  'if' b18c17 > 0 'then' condf;
+  fh:= valh; ft:= valt;
+  'goto' time0;
+
+eqg:
+  calc addr;
+  'if' regop 'then' undef(312);
+  'if' b21 = 0 'then' 'bgn' valh:= fh; valt:= ft 'end' 'else'
+  'bgn' valh:= -fh; valt:= -ft 'end';
+  'if' b18c17 > 0 'then' condf;
+  'if' ~(valh = 0 { sign(1/valh) = sign(1/valt)) 'then' nint:= 1;
+  cg:= 0; m:= valt; stm1;
+  'if' mc addr 'then' b up1;
+  'goto' time0;
+
+ftd:
+  flag:= 'true';
+fplus:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  calc addr;
+  'if' addrop 'then' 'bgn' valh:= 0; valt:= addr 'end' 'else'
+  'if' addr = 57 'then'
+  'bgn' valh:= fh; valt:= ft 'end' 'else'
+  'if' addr = 59 'then'
+  'bgn' valh:=	a; valt:=  s 'end' 'else'
+  'bgn' cg:= 0; mem; valh:= m; addr:= addr + 1; mem; valt:= m 'end';
+  'if' mc addr 'then' bdown2;
+  'if' signinc 'then' of:= 1;
+  x:= compf(fh, ft); y:= compf(valh, valt);
+  'if' flag 'then'
+  'bgn'
+    'if' b21 = 0 'then'
+    'bgn' x:= x * y; ccs:= ccs + 4;  ccsof:= ccsof + 45 'end' 'else'
+    'bgn'
+      'if' x = 0 { y =0 'then' undef(120);
+      x:= x / y; ccs:= ccs + 44; ccsof:= ccsof + 5
+    'end'
+  'end' 'else'
+  'bgn'
+    x:= 'if' b21 =0 'then' x + y 'else' x - y;
+    'if' b20c19 = 1 'then' ccs:= ccs + 1;
+    ccsof:= ccsof + 9
+  'end';
+  valh:= head of(x); valt:= tail of(x);
+  'if' b18c17 > 0 'then' condf;
+  'if' abs(valh) > tp14m1 'then' nint:= 1;
+  fh:= valh; ft:= valt;
+  'goto' time0;
+
+gtd:
+  flag:= 'true';
+gplus:
+  calc addr;
+  'if' addr = 57 'then' undef(342);
+  cg:= 0; memreg; valt:= m; valh:= sign(m) * 0;
+  x:= compf(fh, ft); y:= compose(valh, valt);
+  'if' flag 'then'
+  'bgn'
+    'if' b21 = 0 'then'
+    'bgn' x:= x * y; ccs:= ccs + 5;  ccsof:= ccsof + 43 'end' 'else'
+    'bgn'
+      'if' x = 0 { y =0 'then' undef(121);
+      x:= x / y; ccs:= ccs + 45; ccsof:= ccsof + 5
+    'end'
+  'end' 'else'
+  'bgn'
+    x:= 'if' b21 =0 'then' x + y 'else' x - y;
+    ccsof:= ccsof + 9
+  'end';
+  valh:= head of(x); valt:= tail of(x);
+  'if' b18c17 > 0 'then' condf;
+  'if' abs(valh) > tp14m1 'then' nint:= 1;
+  fh:= valh; ft:= valt;
+  'goto' time0;
+
+jump:
+  flag:= 'true';
+goto:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end' 'else'
+  'if' b16c15 = 1 'then'
+  'bgn' 'if' of = 0 'then' 'goto' skip 'end';
+  calc addr;
+  'if' mc addr 'then' bdown1;
+  'if' b16c15 = 1 'then' of:= 0;
+  'if' addrop 'then' val:= addr 'else'
+  'if' addr = 62 'then' undef(343) 'else'
+  'bgn' cg:= 0; memreg; val:= m 'end';
+  'if' b21 = 1 'then' val:= -val;
+  hulp1:= val;
+  'if' abs(val) > tp18m1 'then' val:= star(val);
+  'if' flag 'then' val:= -(-ot - val);
+  'if' 1/val < 0 'then' undef(26350) 'else'
+  'if' val > tp18m1 'then' val:= star(val) 'else'
+  'if' val > tp18m3 'then' 'else'
+  'if' val > max addr 'then' undef(26351);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  'if' tcnt = 32 'then' tcnt:= 0;
+  tlist[tcnt]:= ot;
+  ot:=val;
+  'if' b18c17 = 0 'then' 'goto' time0;
+  y:= ('if' 1/hulp1 < 0 'then' hulp1 + tp26m1 'else' hulp1) '/' tp18;
+  x:= y '/' 2; c:= y - x - x;
+  y:= x '/' 2; iv:= x - y - y;
+  x:= y '/' 2; lt:= y - x - x;
+  y:= x '/' 2; of:= x - y - y;
+  x:= y '/' 2; last par word:= -(y - x - x - 1);
+  y:= x '/' 2; nint:= x - y - y;
+  x:= y '/' 2; ov:= y - x - x;
+  'if' bt = 0 } x 'ne' 0 'then' 'bgn' iv:= ov:= 1; bt:= 0 'end';
+  'goto' time0;
+
+repn:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end' 'else'
+  'if' b16c15 = 1 'then'
+  'bgn' 'if' of = 0 'then' 'goto' skip 'end';
+  'if' b16c15 = 1 'then' of:= 0;
+  hulp1:= b21 + b21 + b21 + b21 + b20c19;
+  'if' ~ filled[hulp1] 'then' undef(25410);
+  x:= m0[hulp1] -1;
+  'if' trace 'then' report reading(hulp1, x + 1);
+  'if' x < -tp26m1 'then' x:= tp26m1;
+  m0[hulp1]:= x;
+  'if' trace 'then' report writing(hulp1, x);
+  'if' 'if' b18c17 = 0 'then' 'true' 'else'
+       'if' b18c17 = 1 'then' x 'ge' 1 'else'
+       'if' b18c17 = 2 'then' x = 0 'else' x 'ge' 0 'then'
+  'bgn'
+    'if' b14t0 > max addr 'then' undef(26354);
+    jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+    'if' tcnt = 32 'then' tcnt:= 0;
+    tlist[tcnt]:= ot;
+    ot:= b14t0
+  'end';
+  'goto' time0;
+
+subn:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end' 'else'
+  'if' b16c15 = 1 'then'
+  'bgn' 'if' of = 0 'then' 'goto' skip 'end';
+  'if' b16c15 = 1 'then' of:= 0;
+  hulp2:= 'if' ingreep type = 2 'then' tlink + tp24 'else' tlink;
+  x:= b18c17 + b21;
+  hulp1:= x + x + x + x + b20c19 + 8;
+  'if' prot 'then'
+  'bgn'
+    'if' hulp1 > 15 { dgp[0] 'ge' 0 'then' undef(27503)
+  'end';
+  filled[hulp1]:= 'true';
+  m0[hulp1]:= hulp2;
+  'if' trace 'then' report writing(hulp1, hulp2);
+  'if' b14t0 > max addr 'then' undef(26355);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  'if' tcnt = 32 'then' tcnt:= 0;
+  tlist[tcnt]:= hulp2 - tp26m1;
+  ot:= b14t0;
+  'goto' time0;
+
+subc:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end' 'else'
+  'if' b16c15 = 1 'then'
+  'bgn' 'if' of = 0 'then' 'goto' skip 'end';
+  calc addr;
+  subcd:= bt = 1 { b18c17 = 3;
+  gate:= bt = 0 { addr 'ge' 256 { addr < 320;
+  'if' mc addr 'then' bdown1;
+  'if' b16c15 = 1 'then' of:= 0;
+  'if' gate 'then' prot:= 'false';
+  'if' addrop 'then' val:= addr 'else'
+  'if' addr = 62 'then' undef(344) 'else'
+  'bgn' cg:= 0; memreg; val:= m 'end';
+  'if' gate 'then' prot:= 'true';
+  hulp2:= 'if' ingreep type = 2 'then' tlink + tp24 'else' tlink;
+  addr:= 'if' b > tp18m1 'then' star(b) 'else' b;
+  'if' 1/addr < 0 'then' undef(26362);
+  'if' ~addr op { b = 0 'then' undef(26363);
+  'if' gate { addr < 256 'then' undef(27502);
+  cg:= 0; m:= hulp2; stm;
+  b:= b + 1;
+  'if' abs(val) > tp18m1 'then' val:= star(val);
+  'if' 1/val < 0 'then' undef(26352) 'else'
+  'if' val > tp18m3 'then' 'else'
+  'if' val > max addr 'then' undef(26353);
+  jcnt:= jcnt + 1; tcnt:= tcnt + 1;
+  'if' tcnt = 32 'then' tcnt:= 0;
+  tlist[tcnt]:= hulp2 - tp26m1;
+  ot:=val;
+  'if' gate 'then' 'bgn' bt:= 1; iv:= 0 'end';
+  'if' subcd 'then' iv:= 0;
+  'goto' time2;
+
+do:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end' 'else'
+  'if' b16c15 = 1 'then'
+  'bgn' 'if' of = 0 'then' 'goto' skip 'end';
+  calc addr;
+  'if' mc addr 'then' bdown1;
+  'if' b16c15 = 1 'then' of:= 0;
+  'if' b18c17 = 3 'then' s:= addr;
+  'if' addr = 62 'then' undef(345) 'else'
+  'bgn' cg:= 0; memreg; val:= m 'end';
+  or:= val;
+  dcs:= dcs + 1; 'if' dcs > dcs max 'then' undef(3);
+  'if' key 'then'
+  'bgn' ingreep type:= 1; ir addr:= 28; 'goto' ingreep 'end';
+  'if' trace 'then' report eod(addr, val);
+  'goto' basis cyclus 2;
+
+clp:
+  'if' b16c15 = 1 'then' undef(212);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  c:= parbit(last par word);
+  'goto' time0;
+
+int:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  val:= nint; nint:= 0;
+  'if' b16c15 'ne' 1 'then' c:= val;
+  'goto' time0;
+
+rgt:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  val:=  'if' b11t5 = 8 'then' a 'else'
+	 'if' b11t5 = 9 'then' s 'else' b;
+  'if' b21 = 1 'then' val:= - val;
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then'
+  'bgn'  'if' b4t0 = 0 'then' a:= val 'else'
+	 'if' b4t0 = 1 'then' s:= val 'else' b:= val
+  'end';
+  'goto' time0;
+
+lees q:
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' b20 = 0 'then' l:= b5t0 'else'
+  'bgn'
+    l:= b5t0 + b;
+    'if' l < 0 } l > 1 'then' undef(141)
+  'end';
+  'if' b11t9= 5 'then' val:= 'if' l = 0 'then'	 if0 'else'   if1 'else'
+  'if' b11t9= 6 'then' val:= 'if' l = 0 'then' lvif0 'else' lvif1 'else'
+  undef(145);
+  'if' b8t6 = 1 'then'
+  val:= and( val, 'if' b24 = 0 'then' a 'else' s);
+  'if' b18c17 > 0 'then' cond;
+  'if' b16c15 'ne' 1 'then'
+  'bgn' 'if' b24 = 0 'then' a:= val 'else' s:= val 'end';
+  'goto' time1;
+
+maak q:
+  'if' b16c15 = 1 'then' undef(213);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' bt = 0 'then' undef(130);
+  'if' b20 = 0 'then' l:= b5t0 'else'
+  'bgn'
+    'if' b < 0 'then' undef(142);
+    l:= b5t0 + b
+  'end';
+  'if' l > 39 'then' undef(143);
+  'if' b11t9 = 0 'then'
+  'bgn'
+    'if' read q(l, afv0, afv1) = 0 'then' undef(147);
+    set q(l, af0, af1, b24); attendeer charon af(l)
+  'end' 'else'
+  'if' b11t9 = 1 'then'
+  'bgn'
+    'if' read q(l, ifv0, ifv1) = 0 'then' undef(148);
+    set q(l, if0, if1, b24)
+  'end' 'else'
+  'if' b11t9 = 2 'then'
+  'bgn'
+    'if' read q(l, lvifv0, lvifv1) = 0 'then' undef(149);
+    set q(l, lvif0, lvif1, b24)
+  'end' 'else'
+  undef(146);
+  'goto' time1;
+
+maak iv:
+  'if' b16c15 = 1 'then' undef(214);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' bt = 0 'then' undef(131);
+  iv:= b24;
+  'goto' time0;
+
+maak ov:
+  'if' b16c15 = 1 'then' undef(215);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' bt = 0 'then' undef(132);
+  ov:= b24;
+  'goto' time0;
+
+itvon:
+  'if' b16c15 = 1 'then' undef(216);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' bt = 0 'then' undef(133);
+  itv:= 1;
+  'goto' basis cyclus1;
+
+memprot:
+  'if' b16c15 = 1 'then' undef(217);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' bt = 0 'then' undef(134);
+  b20c19:= 2; b14t0:= tp14; calc addr;
+  cg:= 0; mem reg; val:= m;
+  hulp1:= bitstring(17,13,val) * 16;
+  'if' hulp1 > max addr '/' tp9 'then' undef(26361);
+  val:= circ shift(val, 3);
+  'for' hulp3:= 0 'step' 1 'until' 15 'do'
+  dgp[hulp1 + hulp3]:=
+		   bit(hulp3, val) * 2 + bit(hulp3 '/' 8 + 25, val) - 1;
+  b up1;
+  'goto' time2;
+
+operate:
+  'if' b16c15 = 1 'then' undef(226);
+  'if' b16c15 > 1 'then'
+  'bgn' 'if' b16c15 'ne' c+2 'then' 'goto' skip 'end';
+  'if' b20c19 'ne' 2 'then' l:= b14t0 'else' l:= b14t0 + b;
+  'if' l < 0 } l > 15 'then' undef(154);
+  'bgn'
+    'switch' act:= 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,16;
+    'goto' act[l + 1];
+  1:  newpage;	   'goto' time0;
+  2:  s:= rehep;   'goto' time0;
+  3:  puhep(s);    'goto' time0;
+  4:  col(s);	   'goto' time0;
+  5:  prsym(s);    'goto' time0;
+  6:  s:= resym;   'goto' time0;
+  7:  pusym(s);    'goto' time0;
+  8:  csym(s);	   'goto' time0;
+  9:  proct(s, 9); 'goto' time0;
+  10: s:= reoct;   'goto' time0;
+  11: undef(155);  'goto' time0;
+  12: undef(156);  'goto' time0;
+  13: print(s);    'goto' time0;
+  14: s:= read;    'goto' time0;
+  15: punch(s);    'goto' time0;
+  16: cpunch(s);   'goto' time0;
+  'end' operate;
+
+timel:
+  ccs:= ccs + ('if' l < 16 'then' 1 'else' 2);
+  'goto' time0;
+
+timel2:
+  ccs:= ccs + 1 + (l - 1) '/' 2;
+  'goto' time0;
+
+skip:
+  'if' trace 'then' report skip; 'goto' time0;
+
+time3:
+  ccs:= ccs + 1;
+time2:
+  ccs:= ccs + 1;
+time1:
+  ccs:= ccs + 1;
+time0:
+  'if' ingreep type > 0 'then' 'bgn' bt:= 1; iv:= 0 'end';
+  ingreep type:= itv:= 0; prot:= bt = 0;
+  'if' sva 'then' undef(0);
+
+  'if' charon teller > 0 'then'
+  'bgn'
+    charon teller:= charon teller - ccs + ccs1;
+    'if' charon teller 'le' 0 'then' wek charon
+  'end';
+  ccs1:= ccs; dcs:= 0;
+  'if' trace 'then' report eoi;
+  'if' key 'then'
+  'bgn' ingreep type:= 1; ir addr:= 28; 'goto' ingreep 'end';
+
+  'if' iv = 0 'then' x:= y:= 0 'else'
+  'bgn'
+    x:= lvif0; y:= lvif1;
+    'if' if0 + if1 > 0 'then'
+    'bgn'
+      'if' and(and(ie0, lvif0), if0) +
+	   and(and(ie1, lvif1), if1) > 0 'then'
+      'bgn' 'co' charon ingreep;
+	ingreep type:= 1; ir addr:= 24; 'goto' ingreep
+      'end' charon ingreep
+    'end' minstens een if aan
+  'end' horend;
+  ie0:= x; ie1:= y; 'co' bewaren voor volgende opdracht;
+
+  'goto' basis cyclus 1;
+
+ingreep:
+  'if' trace 'then' report interrupt(ir addr);
+  'if' itv = 1 'then' undef(135);
+  prot:= 'false';
+  cg:= 0; addr:= ir addr; mem1; or:= m;
+  'goto' basis cyclus 2;
+
+'end'									x8s00660
+'end'
+
+'co' ad hoc master- en trace-procedures, voor testdoeleinden;
+  'proc' master;
+  'bgn'
+    nlcr; printtext("simulatie beeindigd met foutnummer");
+    absfixt(3, 0, error number);
+    'if' ingreep type = 1 'then' printtext("in charon/sleutelingreep");
+    'if' ingreep type = 2 'then' printtext("in foutingreep");
+    'if' ingreep type = 3 'then'
+      printtext("in foutingreep $
+tijdens charon/sleutelingreep");
+    print regs;
+    print tlist;
+    print dgp;
+    print charon;
+    dump(0, max addr);
+    exit
+  'end' master;
+
+  'proc' start monitor;
+  'bgn' sva:= 'true'; lsip; sva:= 'false';
+    cg:= 0; addr:= 512; m:= 0; stm;
+    bva
+  'end' start monitor;
+
+(sva on; lsip; sva off; put 0 in m512; bva)

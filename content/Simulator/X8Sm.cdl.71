@@ -1,0 +1,631 @@
+
+[**********************************************************master**************]
+'short'
+'comment' master program for x8s, 061271.
+ 
+ 
+[interface with simulator]
+'external' 'pointer' max addr,errornumber.
+'macro''flag'
+was wrong data=errornumber'"ge"'100&errornumber<200,
+was wrong inst=errornumber'"ge"'200&errornumber<300,
+was wrong addr=errornumber'"ge"'300&errornumber<400,
+was wrong pari=errornumber'"ge"'400&errornumber<500,
+was prot=errornumber'"ge"'500&errornumber<600,
+was dyst=errornumber=0,
+was time=errornumber=1,
+was stop=errornumber=2,
+was exec=errornumber=3,
+was wrte=errornumber=4.
+'macro''pointer'
+a=a,b=b,fk=fh,g=ft,iv=iv,itv=itv,lt=lt,bt=bt,nint=nint,ot=ot,of=of,ov=ov,
+s=s,t=tlink,c=c,addr=addr,or=or,tp18m1=tp18m1,tp23=tp23,tp24=tp24,
+max work = max master.
+'macro''flag' sva on= sva.
+'macro''action'
+give ip='ip',
+give ls='ls',
+give lsbi='lsbi',
+give lsnb='lsnb',
+give lsip='lsip',
+show=proct('1'','9),
+give bva='bva',
+store=addr:='2';'m':='1';stm,
+fetch=addr:='1';mem;'2':='m',
+exit='"goto"'terminate,
+print regs=print regs,
+printf=print(compf(fk','g)),
+write on=nowrite['1']:='"false"',
+write off=nowrite['1']:='"true"',
+exec on =noexec['1']:='"false"',
+exec off=noexec['1']:='"true"',
+give dump='dump'('1'',''2').
+ 
+ 
+ 
+ 
+[ environment]
+'macro''action'
+ladd='3':=xor('1'',''2'),
+lmult='3':= and ('1'',''2'),
+read in='1':='read',
+give newpage='newpage',
+give nlcr='nlcr',
+spaces='space'('1'),
+add='3':='1'+'2',
+subtr='3':='1'-'2',
+mult='3':='1'*'2',
+addmult='4':='1'*'2'+'3',
+incr='1':='1'+1,
+decr='1':='1'-1,
+invert='1':=-'1',
+take abs='2':='abs'('1'),
+make='1':='2'.
+'macro''flag'
+less='1'<'2',
+lseq='1'_<'2',
+equal='1'='2'.
+'macro''flag'truevalue='"true"',falsevalue='"false"'.
+'external''action'prsym,print,printtext.
+'external''pointer'resym,printpos.
+[internal code of x8]
+'macro''pointer'
+aa=10,bb=11,cc=12,dd=13,ee=14,ff=15,gg=16,hh=17,ii=18,jj=19,kk=20,ll=21,mm=22,
+nn=23,oo=24,pp=25,qq=26,rr=27,ss=28,tt=29,uu=30,vv=31,ww=32,xx=33,yy=34,zz=35,
+spacecode=93,nlcrcode=119,tabcode=118,notcode=76,
+andcode=80,accentcode=120,minuscode=65,coloncode=90,pluscode=64,timescode=66,
+opencode=98,orcode=79,quotecode=121,closecode=99,lesscode=72,underline=126,
+greatercode=74,slashcode=127,equalscode=70,semicoloncode=91,commacode=87.
+ 
+[internal code master program]
+'macro''pointer'
+dump=1031,display=1033,goto=1003,ip=1011,if=1004,nlcr=1034,newpage=1035,lsbi=
+1012,lsip=1018,on=1001,put=1014,start=1013,status=1032,space=1037,bva=1020,
+stop=1002,single=1016,tab=1036,v=1005,quote=1038,ls=1017,lsnb=1019,sva=1015,
+off=1006,
+areg=101,breg=103,creg=104,freg=105,fkreg=106,greg=107,ivreg=108,
+itvreg=109,ltreg=110,orreg=111,btreg=112,nintreg=113,otreg=114,ofreg=115,
+ovreg=116,sreg=117,treg=102,
+at=1101,address=1102,abs=1103,prot=1104,data=1105,exec=1106,false=1107,in=1108,
+instruct   =1109,parity=1110,read=1111,true=1112,write=1113,wrong=1114,l=1115,
+m=1116,number=1117,
+andop=1201,colon=1202,lplus=1203,ltimes=1204,minus=1205,not=1206,open=1207,orop=
+   1208,plus=1209,rless=1211,rlseq=1212,requ=1213,rnequ=1214,rgrtr=1215,
+rgreq=1216,times=1217,close=1218,semicolon=1219,comma=1210.
+'macro''pointer'
+last contr=1005,last cons=1020,last comm=1038,minwork=1.
+'list'lwork[min work:max work].
+'macro''action'
+put sub=lwork['1'-'2']:='3',
+get sub='3':=lwork['1'-'2'].
+ 
+'action'
+prescan,text,shift line,string,gv,error,define label,apply label,note variable,
+connect labels,next symbol,next char,new line,adjust,xok,result.
+'pointer'symb,char,plab,pvar,ptmp,ploc,pin,pwork,value denoted,level.
+'flag' errorfree.
+ 
+[chain handling]
+'action'insert2,insert5.
+insert2+p+x1+x2-q:
+        make+q+p,make+p+pwork,subtr+pwork+3+pwork,
+                (less+pwork+pin,error+'workspace exhausted'+pwork;
+                 put sub+p+0+x1,put sub+p+1+x2,put sub+p+2+q).
+find2+p+x1+x2-q-y:
+        make+q+p,
+   fnd:less+0+q,get sub+q+0+y,
+                (equal+y+x1,get sub+q+1+x2;
+                 get sub+q+2+q,:fnd).
+still2+p+x1+x2:
+        less+0+p,get sub+p+0+x1,get sub+p+1+x2,get sub+p+2+p.
+insert5+p+x1+x2+x3+x4+x5-q:
+        make+q+p,make+p+pwork,subtr+pwork+6+pwork,
+                (less+pwork+pin,error+'workspace exhausted'+pwork;
+                 put sub+p+0+x1,put sub+p+1+x2,put sub+p+2+x3,put sub+p+3+x4,
+                        put sub+p+4+x5,put sub+p+5+q).
+ 
+ 
+ 
+[***************************************************************prescan******]
+[prescan]
+prescan:
+        make+pwork+max work,make+errorfree+truevalue,
+        make+ploc+max work,make+pin+min work,
+        make+plab+0,make+pvar+0,make+ptmp+0,
+        make+char+spacecode,make+level+1,next symbol,
+                (xp+open,text,connect labels,
+                        (errorfree;
+                         give nlcr,printtext+'incorrect program',exit);
+                 error+'no program'+symb,exit).
+text-y-loc:
+   txt: xp+l,
+                (xp+number ,make+y+value denoted,
+                        (xp+colon,define label+y,:txt;
+                         gv+l,apply label+y+loc,gv+loc,:txt);
+                 error+'bad label'+symb,:txt);
+        xp+v,gv+v,
+                (xp+number ,make+y+value denoted,
+                        note variable+y+loc,gv+loc,:txt;
+                 error+'bad variable'+symb,:txt);
+        xp+number ,gv+number ,gv+value denoted,:txt;
+        equal+symb+open,gv+open,shift line,next symbol,incr+level,:txt;
+        equal+symb+close,
+                (equal+level+1;
+                 decr+level,xp+close,gv+close,:txt);
+        equal+symb+quote,gv+quote,string,gv+quote,:txt;
+        equal+symb+semicolon,gv+semicolon,shift line,next symbol,:txt;
+        gv+symb,next symbol,:txt.
+ 
+xp+x:
+        equal+symb+x,next symbol.
+gv+x:
+        less+pwork+pin,error+'workspace exhausted'+pwork;
+        put sub+pin+0+x,incr+pin.
+define label+lab-dummy:
+        find2+plab+lab+dummy,error+'label defined twice'+lab;
+        insert2+plab+lab+pin.
+apply label+lab+loc:
+        find2+plab+lab+loc;
+        insert2+ptmp+lab+pin,make+loc+0.
+note variable+var+loc:
+        find2+pvar+var+loc;
+        make+loc+ploc,insert2+pvar+var+loc,decr+ploc.
+connect labels-lab-pl-loc:
+   rst: still2+ptmp+lab+pl,
+                (find2+plab+lab+loc,put sub+pl+0+loc,:rst;
+                 error+'label defined nonce'+lab,:rst).
+error*x+y-pos:
+        subtr+printpos+1+pos,new line,printtext+x,print+y,
+        give nlcr,spaces+pos,make+errorfree+falsevalue.
+string:
+   str: ask+quotecode,next symbol;
+        gv+char,xok,:str.
+ask+c1:
+        equal+char+c1,xok.
+xok: prsym+underline,nextchar.
+nextchar:
+        prsym+char,make+char+resym.
+new line:
+        prsym+nlcrcode,print+pin,prsym+tabcode.
+shift line-pos:
+        subtr+printpos+24+pos,new line,spaces+pos.
+ 
+nextsymbol:
+        try symbol;error+'unkown char'+char,nextchar,nextsymbol.
+try symbol-val:
+   nxt: equal+char+spacecode,nextchar,:nxt;
+        equal+char+nlcrcode,new line,make+char+resym,:nxt;
+        equal+char+tabcode,nextchar,:nxt;
+        less+char+aa,make+val+char,
+           dec: xok,
+                (less+char+aa,addmult+val+10+char+val,:dec;
+                 make+symb+number ,make+value denoted+val);
+        lseq+char+gg,a to g symbol;
+        lseq+char+pp,h to p symbol;
+        lseq+char+zz,q to z symbol;
+        ask+accentcode,
+                (ask+pluscode,ask+accentcode,make+symb+lplus;
+                 ask+timescode,ask+accentcode,make+symb+ltimes;
+                 ask+ee,ask+qq,ask+accentcode,make+symb+requ;
+                 ask+gg,
+                        (ask+ee,ask+accentcode,make+symb+rgreq;
+                        ask+tt,ask+accentcode,make+symb+rgrtr);
+                 ask+ll,
+                        (ask+ee,ask+accentcode,make+symb+rlseq;
+                        ask+tt,ask+accentcode,make+symb+rless);
+                 ask+nn,ask+ee,ask+accentcode,make+symb+rnequ;
+                 make+val+0,
+                   oct: (ask+accentcode,make+symb+number,make+value denoted+val;
+                         ask+spacecode,:oct;
+                         less+char+8,adjust+val,addmult+val+8+char+val,xok,:oct;
+                         error+'unknown char'+char,nextchar,:oct));
+        ask+andcode,make+symb+andop;
+        ask+closecode,make+symb+close;
+        ask+coloncode,make+symb+colon;
+        ask+commacode,make+symb+comma;
+        ask+equalscode,make+symb+requ;
+        ask+greatercode,make+symb+rgrtr;
+        ask+lesscode,make+symb+rless;
+        ask+minuscode,make+symb+minus;
+        ask+notcode,make+symb+not;
+        ask+opencode,make+symb+open;
+        ask+orcode,make+symb+orop;
+        ask+pluscode,make+symb+plus;
+        ask+quotecode,make+symb+quote;
+        ask+semicoloncode,make+symb+semicolon;
+        ask+slashcode,ask+equalscode,make+symb+rnequ;
+        ask+timescode,make+symb+times;
+        ask+underline,
+                (ask+lesscode,make+symb+rlseq;
+                 ask+greatercode,make+symb+rgreq).
+adjust+y:
+        lseq+tp23+y,subtr+y+tp24+y;  .
+a to g symbol:
+        ask+aa,
+                (ask+bb,result+abs;
+                 ask+dd,result+address;
+                 ask+tt,result+at;
+                 result+areg);
+        ask+bb,
+                (ask+tt,result+btreg;
+                 ask+vv,result+bva;
+                 result+breg);
+        ask+cc,result+creg;
+        ask+dd,
+                (ask+aa,result+data;
+                 ask+ii,result+display;
+                 ask+uu,result+dump);
+        ask+ee,result+exec;
+        ask+ff,
+                (ask+aa,result+false;
+                 ask+kk,result+fkreg;
+                 result+freg);
+        ask+gg,
+                (ask+oo,result+goto;
+                 result+greg).
+h to p symbol:
+        ask+ii,
+                (ask+ff,result+if;
+                 ask+nn,
+                        (ask+ss,result+instruct;
+                         result+in);
+                 ask+pp,result+ip;
+                 ask+tt,result+itvreg;
+                 ask+vv,result+ivreg);
+        ask+ll,
+                (ask+ss,
+                        (ask+bb,result+lsbi;
+                         ask+ii,result+lsip;
+                         ask+nn,result+lsnb;
+                         result+ls);
+                 ask+tt,result+ltreg;
+                 result+l);
+        ask+mm,result+m;
+        ask+nn,
+                (ask+ee,result+newpage;
+                 ask+ii,result+nintreg;
+                 ask+ll,result+nlcr);
+        ask+oo,
+                (ask+ff,
+                        (ask+ff,result+off;
+                         result+ofreg);
+                 ask+nn,result+on;
+                 ask+rr,result+orreg;
+                 ask+tt,result+otreg;
+                 ask+vv,result+ovreg);
+        ask+pp,
+                (ask+aa,result+parity;
+                 ask+rr,result+prot;
+                 ask+uu,result+put).
+q to z symbol:
+        ask+rr,result+read;
+        ask+ss,
+                (ask+ii,result+single;
+                 ask+pp,result+space;
+                 ask+tt,
+                        (ask+aa,
+                                (ask+rr,result+start;
+                                 ask+tt,result+status);
+                         ask+oo,result+stop);
+                 ask+vv,result+sva;
+                 result+sreg);
+        ask+tt,
+                (ask+aa,result+tab;
+                 ask+rr,result+true;
+                 result+treg);
+        ask+vv,result+v;
+        ask+ww,ask+rr,
+                (ask+ii,result+write;
+                 ask+oo,result+wrong).
+result+res:
+        make+symb+res,
+   skp: (lseq+aa+char,lseq+char+zz,nextchar,:skp;  ).
+ 
+ 
+ 
+[***************************************************************program*******]
+[program]
+'pointer'
+pwrte,pexec,
+interdata,interaddr,interpari,interinst,interprot.
+'action' program,instruction list,instruction,skip instruction,jump to,
+prefill onconditions.
+program:
+        make+level+1,make+pwork+ploc,make+pwrte+0,make+pexec+0,
+        prefill onconditions,jump to+min work,instruction list.
+prefill onconditions:
+        insert5+pwrte+0+max addr+1+1+pin,
+        insert5+pexec+0+max addr+1+1+pin,
+        make+interdata+pin,
+        make+interaddr+pin,
+        make+interpari+pin,
+        make+interinst+pin,
+        make+interprot+pin,
+        gv+stop,gv+semicolon.
+instruction list:
+   rst: instruction,
+                (is+semicolon,:rst;
+                 equal+symb+close;
+                 error+'skipped from'+symb,skip instruction,
+                        (is+semicolon,:rst;  )).
+instruction:
+        is+open,incr+level,instruction list,is+close,decr+level;
+        lseq+symb+last contr,is control instruction;
+        lseq+symb+last cons, is console instruction;
+        lseq+symb+last comm, is comment instruction;
+        error+'incorrect master instruction'+symb,skip instruction.
+[control instructions]
+'action'next,chain,jump to,skip instruction,check addr,catch,release write,
+release exec.
+is control instruction-p-val:
+        is+on,is count option+p,is on condition+p,skip instruction;
+        is+off,is off condition;
+        is+goto,is+l,next+p,jump to+p;
+        is+if,is expr+p,
+                (equal+p+0,skip instruction;instruction);
+        is+v,next+p,is+requ,is expr+val,put sub+p+0+val;
+        is+stop,exit.
+next+p:
+        make+p+symb,incr+pin,get sub+pin+0+symb.
+is+p:
+        equal+p+symb,next+symb.
+is count option+n:
+        is primary+n,is+times;make+n+1.
+is on condition+count:
+        is+write,is+at,chain+count+pwrte;
+        is+exec ,is+at,chain+count+pexec;
+        is+wrong,:act;
+   act: is+instruct,make+interdata+pin;
+        is+address ,make+interaddr+pin;
+        is+parity  ,make+interpari+pin;
+        is+prot    ,make+interprot+pin;
+        is+data    ,make+interdata+pin.
+chain+count+p-from-to:
+        is loc item+from+to,
+                (is+comma,chain+count+p,:ins;
+             ins: insert5+p+from+to+count+count+pin,catch+p+from+to).
+catch+p+from+to-q:
+        make+q+from,
+                (equal+p+pwrte,
+            wrt: write off+q,
+                        (lseq+to+q;incr+q,:wrt);
+            xec: exec off+q,
+                        (lseq+to+q;incr+q,:xec)).
+is off condition-from-to:
+        is+write,is+at,
+           wrt: is loc item+from+to,release write+from+to,
+                        (is+comma,:wrt;  );
+        is+exec,is+at,
+           xec: is loc item+from+to,release exec+from+to,
+                        (is+comma,:xec;  ).
+release write+from+to-q:
+        make+q+from,
+   wrt: write on+q,
+                (lseq+to+q;incr+q,:wrt).
+release exec+from+to-q:
+        make+q+from,
+   xec: exec on+q,
+                (lseq+to+q;incr+q,:xec).
+is loc item+from+to:
+        is address+from,
+                (is+colon,is primary+to;
+                 make+to+from).
+is address+y:
+        is+m,is primary+y,check addr+y.
+check addr+y:
+        equal+y+0,make+y+0;
+        lseq+0+y,lseq+y+tp18m1;
+        make+errornumber+0,error+'bad address'+y,exit.
+skip instruction-lev-i:
+        make+lev+level,
+   skp: equal+symb+semicolon,equal+lev+level;
+        is+open,incr+level,:skp;
+        equal+symb+close,equal+lev+level;
+        is+close,decr+level,:skp;
+        next+i,:skp.
+jump to+p:
+        make+pin+p,get sub+pin+0+symb.
+ 
+ 
+'action'negate,reduce to bit,fill.
+[console instructions]
+is console instruction-ad-exp-from-to:
+        is+ip,give ip;
+        is+ls,give ls;
+        is+lsip,give lsip;
+        is+lsbi,give lsbi;
+        is+lsnb,give lsnb;
+        is+start,is address+ad,make+ot+ad,give bva;
+        is+put,is expr+exp,is+in,
+           lcs:(is loc item+from+to,fill+from+to+exp,
+                        (is+comma,:lcs;  );
+                 is put reg+exp,(is+comma,:lcs;  ));
+        is+bva,give bva;
+        is+single,make+sva on+truevalue,give bva;
+        is+sva,
+                (is+on ,make+sva on+truevalue;
+                 is+off,make+svaon+falsevalue).
+fill+from+to+exp-p:
+        make+p+from,
+   str: store+exp+p,
+                (equal+p+to;incr+p,:str).
+is put reg+exp-bit:
+        is+a   reg,make+a   +exp;
+        is+b   reg,make+b   +exp;
+        is+fk  reg,make+fk  +exp;
+        is+g   reg,make+g   +exp;
+        is+ot  reg,make+ot  +exp,check addr+ot;
+        is+or  reg,make+or  +exp;
+        is+s   reg,make+s   +exp;
+        reduce to bit+exp+bit,
+        is+c   reg,make+c   +bit,negate+c;
+        is+of  reg,make+of  +bit;
+        is+iv  reg,make+iv  +bit;
+        is+ov  reg,make+ov  +bit;
+        is+itv reg,make+itv +bit;
+        is+lt  reg,make+lt  +bit;
+        is+bt  reg,make+bt +bit;
+        is+nintreg,make+nint+bit.
+reduce to bit+exp+bit:
+        equal+exp+0,make+bit+0;
+        make+bit+1.
+ 
+[comment instructions]
+'action' give display,displaystatus,printstring.
+is comment instruction-from-to:
+        is+status,display status,print+pin,printregs;
+        is+dump,
+           dmp:(is loc item+from+to,give dump+from+to,
+                        (is+comma,:dmp; );
+                 give dump+0+max addr);
+        is+display,
+           dsp: (is loc item+from+to,give display+from+to,
+                        (is+comma,:dsp; );
+                 is display reg,(is+comma,:dsp; );
+                 is expr+to,give nlcr,show+to,print+to,
+                        (is+comma,:dsp; ));
+        is+nlcr,give nlcr;
+        is+newpage, give newpage;
+        is+tab,prsym+tabcode;
+        is+space,
+                (is expr+to,spaces+to;spaces+1);
+        is+quote,print string.
+give display+from+to-p-y:
+        make+p+from,
+   dsp: fetch+p+y,give nlcr,printtext+'m[',show+p,printtext+']:',show+y,print+y,
+                (equal+p+to;incr+p,:dsp).
+is display reg:give nlcr,
+        is+a   reg,printtext+'a   ',show+a,print+a   ;
+        is+b   reg,printtext+'b   ',show+b,print+b   ;
+        is+fk  reg,printtext+'fk  ',show+fk,print+fk  ;
+        is+g   reg,printtext+'g   ',show+g,print+g   ;
+        is+ot  reg,printtext+'ot  ',show+ot,print+ot  ;
+        is+or  reg,printtext+'or  ',show+or,print+or  ;
+        is+s   reg,printtext+'s   ',show+s,print+s   ;
+        is+t   reg,printtext+'t   ',show+t,print+t   ;
+        is+c   reg,printtext+'c   ',prsym+c   ;
+        is+of  reg,printtext+'of  ',prsym+of  ;
+        is+ov  reg,printtext+'ov  ',prsym+ov  ;
+        is+iv  reg,printtext+'iv  ',prsym+iv  ;
+        is+itv reg,printtext+'itv',prsym+itv ;
+        is+bt  reg,printtext+'bt  ',prsym+bt  ;
+        is+nintreg,printtext+'nint',prsym+nint;
+        is+f   reg,printtext+'f   ',printf.
+display status:
+        was wrong data,give nlcr,printtext+'wrong data';
+        was wrong addr,give nlcr,printtext+'wrong addr';
+        was wrong pari,give nlcr,printtext+'wrong pari';
+        was wrong inst,give nlcr,printtext+'wrong inst';
+        was dyst,give nlcr,printtext+'in dyst   ';
+        was time,give nlcr,printtext+'tijd op   ';
+        was stop,give nlcr,printtext+'gestopt   ';
+        was exec,give nlcr,printtext+'exec      ';
+        was wrte,give nlcr,printtext+'write     ';
+        was prot,give nlcr,printtext+'protection';
+        give nlcr,printtext+'status  ok'.
+print string-y:
+   str: next+y,
+                (equal+y+quote;
+                 prsym+y,:str).
+ 
+[expressions]
+'action' take or,take and,negate.
+is expr+val-y:
+        is conj+val,
+           rst: (is+orop,is conj+y,take or+val+y+val,:rst;  ).
+is conj+val-y:
+        is negatable+val,
+           rst: (is+andop,is negatable+y,take and+val+y+val,:rst;  ).
+is negatable+val:
+        is+not,is negatable+val,negate+val;
+        is simple+val.
+is simple+val-y:
+        is arithmetic expr+val,
+                (is+rless,is arithmetic expr+y,
+                        (less+val+y,make+val+1;make+val+0);
+                 is+rlseq,is arithmetic expr+y,
+                        (lseq+val+y,make+val+1;make+val+0);
+                 is+requ,is arithmetic expr+y,
+                        (equal+val+y,make+val+1;make+val+0);
+                 is+rnequ,is arithmetic expr+y,
+                        (equal+val+y,make+val+0;make+val+1);
+                 is+rgreq,is arithmetic expr+y,
+                        (lseq+y+val,make+val+1;make+val+0);
+                 is+rgrtr,is arithmetic expr+y,
+                        (less+y+val,make+val+1;make+val+0);  ).
+take or+x1+x2+x3:
+        equal+0+x1,equal+0+x2,make+x3+0;make+x3+1.
+take and+x1+x2+x3:
+        equal+0+x1,make+x3+0;equal+0+x2,make+x3+0;make+x3+1.
+negate+x1:
+        equal+x1+0,make+x1+1;make+x1+0.
+is arithmetic expr+val-y:
+        is term+val,
+           rst: (is+plus,is term+y,add+val+y+val,:rst;
+                 is+minus,is term+y,subtr+val+y+val,:rst;
+                 is+lplus,is term+y,ladd+val+y+val,:rst;  ).
+is term+val-y:
+        is factor+val,
+           rst: (is+times,is factor+y,mult+val+y+val,:rst;
+                 is+ltimes,is factor+y,lmult+val+y+val,:rst;  ).
+is factor+val:
+   rst: is+plus,:rst;
+        is+minus,is factor+val,invert+val;
+        is+abs,is factor+val,take abs+val+val;
+        is primary+val.
+is primary+val-y:
+        is+number,next+val;
+        is+v,next+y,get sub+y+0+val;
+        is+read,read in+val;
+        is address+y,fetch+y+val;
+        is single register+val;
+        is+true,make+val+1;
+        is+false,make+val+0;
+        is+open,is expr+val,is+close.
+ 
+[registers]
+is single register+val:
+        is+areg,make+val+a;
+        is+breg,make+val+b;
+        is+fkreg,make+val+fk;
+        is+greg,make+val+g;
+        is+otreg,make+val+ot;
+        is+orreg,make+val+or;
+        is+sreg,make+val+s;
+        is+treg,make+val+t;
+        is+creg,make+val+c,negate+val;
+        is+ofreg,make+val+of;
+        is+ivreg,make+val+iv;
+        is+ovreg,make+val+ov;
+        is+itvreg,make+val+itv;
+        is+ltreg,make+val+lt;
+        is+btreg,make+val+bt;
+        is+nintreg,make+val+nint.
+ 
+ 
+ 
+'action' start monitor, master, interrupt.
+start monitor:
+        prescan,give newpage,program.
+master-pold:
+        make+svaon+falsevalue,make+pold+pin,
+        was wrong data,jump to+interdata,instruction,exit;
+        was wrong addr,jump to+interaddr,instruction,exit;
+        was wrong pari,jump to+interpari,instruction,exit;
+        was wrong inst,jump to+interinst,instruction,exit;
+        was       prot,jump to+interprot,instruction,exit;
+        was time,display status,exit;
+        was stop,instructionlist;
+        was exec,interrupt+pexec+ot,make+pin+pold;
+        was wrte,interrupt+pwrte+addr,make+pin+pold;             .
+interrupt+p+pl-from-to-count-q:
+        make+q+p,
+   nxq: equal+q+0;
+        get sub+q+0+from,get sub+q+1+to,get sub+q+2+count,
+                (lseq+from+pl,lseq+pl+to,
+                        decr+count,put sub+q+2+count,lseq+count+0,
+                        get sub+q+3+count,put sub+q+2+count,
+                        get sub+q+4+pin,jump to+pin,instruction;
+                 get sub+q+5+q,:nxq).
+ 
+'result' start monitor $ to be called by x8s $ .
